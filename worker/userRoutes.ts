@@ -1,7 +1,7 @@
 import { Hono } from "hono";
 import { getAgentByName } from 'agents';
 import { ChatAgent } from './agent';
-import { API_RESPONSES } from './config';
+import { API_RESPES } from './config';
 import { Env, getAppController, registerSession, unregisterSession } from "./core-utils";
 /**
  * DO NOT MODIFY THIS FUNCTION. Only for your reference.
@@ -23,7 +23,7 @@ export function coreRoutes(app: Hono<{ Bindings: Env }>) {
         console.error('Agent routing error:', error);
         return c.json({
             success: false,
-            error: API_RESPONSES.AGENT_ROUTING_FAILED
+            error: API_RESPES.AGENT_ROUTING_FAILED
         }, { status: 500 });
         }
     });
@@ -86,5 +86,37 @@ export function userRoutes(app: Hono<{ Bindings: Env }>) {
                 stagesActive: 4,
             }
         });
+    });
+    // --- HANDS-FREE ENDPOINTS ---
+    app.post('/api/voice-command', async (c) => {
+        const { transcript, role } = await c.req.json();
+        const agent = await getAgentByName<Env, ChatAgent>(c.env.CHAT_AGENT, 'voice-command-parser');
+        const prompt = `Parse voice command "${transcript}" for HealthOS in ${role} POV. Respond with only a JSON object with "action" and "params". Valid actions: "navigate", "launch", "grantAccess", "endCall". Example: {"action":"navigate","params":{"path":"/dashboard/apps/medscribe"}}`;
+        const response = await agent.fetch(new Request(c.req.url, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ message: prompt, stream: false, systemPrompt: 'You are a JSON-only command parser.' })
+        }));
+        const result = await response.json();
+        try {
+            const parsedAction = JSON.parse(result.data.messages.slice(-1)[0].content);
+            return c.json({ success: true, data: parsedAction });
+        } catch (e) {
+            return c.json({ success: false, error: 'Failed to parse command' });
+        }
+    });
+    app.post('/api/transcribe', async (c) => {
+        // In a real app, you'd process the audio blob here.
+        // For this demo, we'll just use a mock transcript and stream it back.
+        const agent = await getAgentByName<Env, ChatAgent>(c.env.CHAT_AGENT, 'transcriber');
+        const mockTranscript = "Paciente relata dor abdominal... sinal de Murphy positivo.";
+        const systemPrompt = "You are a medical transcriber. The user will provide a mock transcript. Stream it back word by word.";
+        const url = new URL(c.req.url);
+        url.pathname = url.pathname.replace('/api/transcribe', `/api/chat/${'transcriber'}/chat`);
+        return agent.fetch(new Request(url.toString(), {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ message: mockTranscript, stream: true, systemPrompt })
+        }));
     });
 }

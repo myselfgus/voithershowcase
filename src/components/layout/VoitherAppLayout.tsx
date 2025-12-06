@@ -2,7 +2,6 @@ import React from 'react';
 import { useLocation } from 'react-router-dom';
 import { AnimatePresence, motion } from 'framer-motion';
 import { TopMenuBar } from './TopMenuBar';
-import { Dock } from './Dock';
 interface VoitherAppLayoutProps {
   children: React.ReactNode;
 }
@@ -25,7 +24,6 @@ export function VoitherAppLayout({ children }: VoitherAppLayoutProps) {
           </motion.div>
         </AnimatePresence>
       </div>
-      <Dock />
     </div>
   );
 }

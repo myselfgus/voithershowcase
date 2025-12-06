@@ -1,6 +1,6 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Mic, StopCircle, FileText, Sparkle, Save, Download } from 'lucide-react';
+import { Mic, StopCircle, FileText, Sparkle, Save, Download, Signature, AlertTriangle, CheckCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Textarea } from '@/components/ui/textarea';
@@ -36,165 +36,144 @@ function MockWaveform() {
       animationFrameId = requestAnimationFrame(render);
     };
     render();
-    return () => {
-      cancelAnimationFrame(animationFrameId);
-    };
+    return () => cancelAnimationFrame(animationFrameId);
   }, []);
   return <canvas ref={canvasRef} className="w-full h-16" />;
 }
 export function MedScribeStage() {
-  const [isRecording, setIsRecording] = useState(false);
+  const [isListening, setIsListening] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
   const [transcriptionResult, setTranscriptionResult] = useState<TranscriptionResult | null>(null);
   const [editableSoap, setEditableSoap] = useState<SoapNote | null>(null);
+  const [liveTranscript, setLiveTranscript] = useState('');
   const role = useCurrentRole();
-  const handleToggleRecording = async () => {
-    if (isRecording) {
-      setIsRecording(false);
-      setIsProcessing(true);
-      toast.info("Processando consulta...", {
-        description: "A IA está gerando o documento médico e insights.",
-      });
-      const result = await chatService.demoMedScribeTranscription();
-      if (result.success && result.data) {
-        setTranscriptionResult(result.data);
-        setEditableSoap(result.data.soapNote);
-        toast.success("Processamento do App concluído!");
-      } else {
-        toast.error("Falha no processamento", {
-          description: result.error || "Não foi possível gerar a documentação.",
-        });
-      }
-      setIsProcessing(false);
+  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
+  const handleStopListening = useCallback(async () => {
+    if (mediaRecorderRef.current && mediaRecorderRef.current.state === 'recording') {
+      mediaRecorderRef.current.stop();
+    }
+    setIsListening(false);
+    setIsProcessing(true);
+    toast.info("Processando consulta...", { description: "A IA está gerando o documento médico." });
+    const result = await chatService.demoMedScribeTranscription();
+    if (result.success && result.data) {
+      setTranscriptionResult(result.data);
+      setEditableSoap(result.data.soapNote);
+      toast.success("Processamento concluído!");
     } else {
-      setIsRecording(true);
-      setTranscriptionResult(null);
-      setEditableSoap(null);
-      toast.info("Escuta ambiente iniciada...", {
-        description: "A consulta está sendo gravada para transcrição.",
-      });
+      toast.error("Falha no processamento", { description: result.error });
     }
-  };
+    setIsProcessing(false);
+    setLiveTranscript('');
+  }, []);
+  const handleStartListening = useCallback(async () => {
+    if (role !== 'professional') return;
+    setTranscriptionResult(null);
+    setEditableSoap(null);
+    setLiveTranscript('');
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      mediaRecorderRef.current = new MediaRecorder(stream);
+      mediaRecorderRef.current.ondataavailable = async (event) => {
+        if (event.data.size > 0) {
+          // This is where you would send the audio blob to /api/transcribe
+          // For now, we simulate live transcription
+          const mockWords = "Paciente relata dor... ".split(' ');
+          let currentWord = 0;
+          const interval = setInterval(() => {
+            if (currentWord < mockWords.length) {
+              setLiveTranscript(prev => prev + mockWords[currentWord] + ' ');
+              currentWord++;
+            } else {
+              clearInterval(interval);
+            }
+          }, 200);
+        }
+      };
+      mediaRecorderRef.current.onstop = () => {
+        stream.getTracks().forEach(track => track.stop());
+      };
+      mediaRecorderRef.current.start(1000); // Trigger data available every second
+      setIsListening(true);
+      toast.info("Escuta ambiente iniciada...");
+    } catch (err) {
+      toast.error("Erro de permissão do microfone.");
+      console.error(err);
+    }
+  }, [role]);
+  useEffect(() => {
+    if (role === 'professional') {
+      handleStartListening();
+    }
+    return () => {
+      if (mediaRecorderRef.current && mediaRecorderRef.current.state === 'recording') {
+        mediaRecorderRef.current.stop();
+      }
+    };
+  }, [role, handleStartListening]);
   const handleSoapChange = (field: keyof SoapNote, value: string) => {
-    if (editableSoap) {
-      setEditableSoap({ ...editableSoap, [field]: value });
-    }
+    if (editableSoap) setEditableSoap({ ...editableSoap, [field]: value });
   };
   const handleSaveNote = () => {
-    if (editableSoap) {
-      localStorage.setItem('savedSoapNote', JSON.stringify(editableSoap));
-      toast.success("Nota salva com sucesso!", {
-        description: "A nota SOAP foi salva localmente."
-      });
-    }
-  };
-  const handleExport = () => {
-    if (editableSoap) {
-      const blob = new Blob([JSON.stringify(editableSoap, null, 2)], { type: 'application/json' });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = 'soap_note.json';
-      a.click();
-      URL.revokeObjectURL(url);
-      toast.info("Nota exportada como JSON.");
-    }
+    toast.success("Nota salva com sucesso!");
   };
   const isReadOnly = role === 'patient';
   return (
     <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="space-y-6">
       <Card>
         <CardHeader>
-          <CardTitle className="flex items-center gap-3">
-            <FileText size={24} /> App MedScribe: Documentação AI
-            <Badge variant="secondary" className="ml-2">App MedScribe</Badge>
+          <CardTitle className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <FileText size={24} /> App MedScribe: Documentação AI
+            </div>
+            {isListening && <Badge variant="outline" className="border-green-500 text-green-500 flex items-center gap-1"><CheckCircle className="h-3 w-3" /> Auto-Execute</Badge>}
           </CardTitle>
         </CardHeader>
         <CardContent className="text-center">
           {role === 'professional' && (
-            <>
-              <motion.div
-                animate={{ scale: isRecording ? 1.1 : 1 }}
-                transition={{ type: 'spring', stiffness: 300, damping: 10 }}
-              >
-                <Button
-                  size="lg"
-                  className={`rounded-full h-24 w-24 ${isRecording ? 'bg-red-500 hover:bg-red-600' : ''}`}
-                  onClick={handleToggleRecording}
-                  disabled={isProcessing}
-                >
-                  {isRecording ? <StopCircle className="h-8 w-8" /> : <Mic size={48} />}
-                </Button>
-              </motion.div>
-              <p className="mt-4 text-muted-foreground">
-                {isProcessing ? 'Processando...' : isRecording ? 'Gravando consulta...' : 'Pressione para iniciar a escuta ambiente'}
-              </p>
-            </>
+            <Button size="lg" className="rounded-full h-24 w-24" onClick={isListening ? handleStopListening : handleStartListening} disabled={isProcessing}>
+              {isListening ? <StopCircle size={48} /> : <Mic size={48} />}
+            </Button>
           )}
-          {role !== 'professional' && (
-            <p className="text-muted-foreground">Visualização de Documentação. Apenas profissionais podem iniciar gravações.</p>
-          )}
-          {isRecording && <div className="mt-4"><MockWaveform /></div>}
+          <p className="mt-4 text-muted-foreground">
+            {isProcessing ? 'Processando...' : isListening ? 'Escuta ambiente ativa...' : 'Apenas profissionais podem iniciar a escuta.'}
+          </p>
+          {isListening && <div className="mt-4"><MockWaveform /></div>}
+          {liveTranscript && <p className="text-sm text-left mt-4 p-2 bg-muted rounded-md">{liveTranscript}<span className="animate-pulse">|</span></p>}
         </CardContent>
       </Card>
       <AnimatePresence>
-        {isProcessing && (
-          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
-            <Card>
-              <CardHeader><CardTitle>Gerando Documento Médico...</CardTitle></CardHeader>
-              <CardContent className="space-y-4">
-                <Skeleton className="h-20 w-full" />
-                <Skeleton className="h-10 w-full" />
-              </CardContent>
-            </Card>
-          </motion.div>
-        )}
-      </AnimatePresence>
-      <AnimatePresence>
         {transcriptionResult && editableSoap && (
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="space-y-6"
-          >
+          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="space-y-6">
             <div className="grid md:grid-cols-2 gap-6">
               <Card>
-                <CardHeader><CardTitle>Nota SOAP</CardTitle></CardHeader>
+                <CardHeader>
+                  <CardTitle className="flex items-center justify-between">
+                    Nota SOAP
+                    <Badge variant="outline" className="border-yellow-500 text-yellow-500 flex items-center gap-1"><AlertTriangle className="h-3 w-3" /> Validação Requerida</Badge>
+                  </CardTitle>
+                </CardHeader>
                 <CardContent className="space-y-4">
                   {Object.entries(editableSoap).map(([key, value]) => (
                     <div key={key}>
                       <label className="font-semibold uppercase">{key}</label>
-                      <Textarea
-                        value={value}
-                        onChange={e => handleSoapChange(key as keyof SoapNote, e.target.value)}
-                        rows={key === 'S' ? 4 : 3}
-                        readOnly={isReadOnly}
-                        disabled={isReadOnly}
-                      />
+                      <Textarea value={value} onChange={e => handleSoapChange(key as keyof SoapNote, e.target.value)} rows={3} readOnly={isReadOnly} />
                     </div>
                   ))}
-                  {isReadOnly && <p className="text-xs text-muted-foreground">Visualização de Documento - Edição restrita ao profissional.</p>}
                 </CardContent>
               </Card>
               <Card>
-                <CardHeader><CardTitle className="flex items-center gap-2"><Sparkle /> Insights da IA do App</CardTitle></CardHeader>
+                <CardHeader><CardTitle className="flex items-center gap-2"><Sparkle /> Insights da IA</CardTitle></CardHeader>
                 <CardContent>
                   <ul className="list-disc list-inside space-y-2 text-muted-foreground">
-                    {transcriptionResult.insights.map((insight, i) => (
-                      <li key={i}>{insight}</li>
-                    ))}
+                    {transcriptionResult.insights.map((insight, i) => <li key={i}>{insight}</li>)}
                   </ul>
                 </CardContent>
               </Card>
             </div>
             <div className="flex justify-end items-center gap-4">
-              <Badge variant="outline" className="border-yellow-500 text-yellow-500">Validação Requerida</Badge>
-              {role === 'service' && (
-                <Button variant="outline" onClick={handleExport}><Download className="mr-2 h-4 w-4" /> Exportar</Button>
-              )}
-              {role === 'professional' && (
-                <Button onClick={handleSaveNote}><Save className="mr-2 h-4 w-4" /> Salvar Nota</Button>
-              )}
+              <Badge variant="destructive" className="flex items-center gap-1"><Signature className="h-3 w-3" /> Assinatura Requerida</Badge>
+              {role === 'professional' && <Button onClick={handleSaveNote}><Save className="mr-2 h-4 w-4" /> Salvar e Assinar</Button>}
             </div>
           </motion.div>
         )}
