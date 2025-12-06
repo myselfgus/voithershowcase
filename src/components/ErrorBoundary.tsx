@@ -39,10 +39,7 @@ export class ErrorBoundary extends Component<Props, State> {
       return (
         <ErrorFallback
           error={this.state.error}
-          onRetry={() => {
-            this.setState({ hasError: false, error: null });
-            window.location.reload();
-          }}
+          onRetry={() => window.location.reload()}
         />
       );
     }

@@ -27,8 +27,14 @@ export function RouteErrorBoundary() {
       message = error.statusText || "An unexpected error occurred.";
     }
   } else if (error instanceof Error) {
-    errorDetails = error;
-    message = error.message;
+    // Only expose error details in development
+    if (process.env.NODE_ENV === 'development') {
+      errorDetails = error;
+    }
+    // Use generic message in production for security
+    message = process.env.NODE_ENV === 'development' 
+      ? error.message 
+      : "An unexpected error occurred. Please try again.";
   }
 
   return (
