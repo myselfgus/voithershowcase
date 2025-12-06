@@ -12,6 +12,7 @@ import { ScriptEditor } from './ScriptEditor';
 import { CastOverview } from './CastOverview';
 import { RegulacaoStage } from '@/components/stages/RegulacaoStage';
 import { AgendaStage } from '@/components/stages/AgendaStage';
+import { TelemedicinaStage } from '@/components/stages/TelemedicinaStage';
 import { cn } from '@/lib/utils';
 const TABS = [
   { name: 'Paciente', path: '/dashboard/actors/patient', icon: User },
@@ -22,6 +23,7 @@ const STAGE_TABS = [
   { name: 'MedScribe', path: '/dashboard/stages/medscribe', icon: Layers },
   { name: 'Regulação', path: '/dashboard/stages/regulacao', icon: Layers },
   { name: 'Agenda', path: '/dashboard/stages/agenda', icon: Layers },
+  { name: 'Telemedicina', path: '/dashboard/stages/telemedicina', icon: Layers },
   { name: 'Manifestos', path: '/dashboard/stages/viewer', icon: FileCode },
 ];
 function ActorDashboard() {
@@ -54,17 +56,18 @@ function ActorDashboard() {
   );
 }
 function StageDashboard() {
+  const location = useLocation();
   return (
     <div className="space-y-6">
-      <nav className="flex space-x-2 border-b">
+      <nav className="flex space-x-2 border-b overflow-x-auto">
         {STAGE_TABS.map(tab => (
           <NavLink
             key={tab.path}
             to={tab.path}
-            className={({ isActive }) =>
+            className={() =>
               cn(
-                'flex items-center gap-2 px-3 py-2 text-sm font-medium',
-                isActive ? 'border-b-2 border-primary text-primary' : 'text-muted-foreground hover:text-primary'
+                'flex items-center gap-2 px-3 py-2 text-sm font-medium flex-shrink-0',
+                location.pathname.startsWith(tab.path) ? 'border-b-2 border-primary text-primary' : 'text-muted-foreground hover:text-primary'
               )
             }
           >
@@ -77,6 +80,7 @@ function StageDashboard() {
         <Route path="medscribe" element={<MedScribeStage />} />
         <Route path="regulacao" element={<RegulacaoStage />} />
         <Route path="agenda" element={<AgendaStage />} />
+        <Route path="telemedicina" element={<TelemedicinaStage />} />
         <Route path="viewer" element={<StageViewer />} />
         <Route index element={<Navigate to="medscribe" replace />} />
       </Routes>

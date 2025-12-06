@@ -252,7 +252,7 @@ export const renderToolCall = (toolCall: ToolCall): string => {
   if ('content' in result) return `🔧 ${toolCall.name}: Executed`;
   if (toolCall.name === 'get_weather') {
     const weather = result as WeatherResult;
-    return `🌤️ Weather in ${weather.location}: ${weather.temperature}°C, ${weather.condition}`;
+    return `��️ Weather in ${weather.location}: ${weather.temperature}°C, ${weather.condition}`;
   }
   return `🔧 ${toolCall.name}: Done`;
 };

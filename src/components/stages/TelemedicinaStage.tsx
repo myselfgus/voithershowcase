@@ -4,12 +4,10 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Badge } from '@/components/ui/badge';
 import { toast } from 'sonner';
 import { chatService } from '@/lib/chat';
 import { AccessGrantModal } from '@/components/ui/AccessGrantModal';
-import { Video, PhoneOff, Sparkle, Signature } from 'lucide-react';
-import { useCurrentRole } from '@/stores/useRoleStore';
+import { VideoCamera, PhoneDisconnect, Sparkle } from 'lucide-react';
 function MockVideoFeed() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   useEffect(() => {
@@ -41,38 +39,33 @@ function MockVideoFeed() {
   return <canvas ref={canvasRef} className="w-full h-full object-cover rounded-md" />;
 }
 export function TelemedicinaStage() {
-  const [showConsent, setShowConsent] = useState(false);
+  const [showConsent, setShowConsent] = useState(true);
   const [inCall, setInCall] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
   const [summary, setSummary] = useState('');
-  const role = useCurrentRole();
-  useEffect(() => {
-    setShowConsent(role === 'patient');
-  }, [role]);
   const handleStartCall = () => {
     setInCall(true);
-    toast.info('Chamada de telemedicina iniciada.');
+    toast.info('Chamada de vídeo iniciada.');
   };
   const handleEndCall = async () => {
     setInCall(false);
     setIsProcessing(true);
-    toast.info('Gerando resumo da consulta remota...');
-    const mockTranscript = "Consulta de acompanhamento para hipertensão. Paciente relata boa adesão ao tratamento com Losartana 50mg. Pressão arterial aferida em casa está em média 130/85 mmHg. Sem queixas novas. Plano: Manter medicação, retornar em 3 meses.";
-    const systemPrompt = `Você é um assistente médico. Gere um resumo conciso e estruturado da consulta de telemedicina a partir da transcrição fornecida para um POV de "${role}".`;
+    toast.info('Gerando resumo da consulta...');
+    const mockTranscript = "Consulta de follow-up para hipertensão. Paciente relata boa adesão ao tratamento com Losartana 50mg. Pressão arterial aferida em casa está em média 130/85 mmHg. Sem queixas novas. Plano: Manter medicação, retornar em 3 meses.";
+    const systemPrompt = "Você é um assistente médico. Gere um resumo conciso e estruturado da consulta de telemedicina a partir da transcrição fornecida.";
     let accumulatedSummary = '';
     await chatService.sendMessage(mockTranscript, 'google-ai-studio/gemini-2.5-flash', (chunk) => {
       accumulatedSummary += chunk;
       setSummary(accumulatedSummary);
     }, systemPrompt);
-    await chatService.sendMessage(`Execute o script para "consulta_fim" no POV ${role}`);
     setIsProcessing(false);
-    toast.success('Resumo da consulta remota gerado.');
+    toast.success('Resumo da consulta gerado.');
   };
   return (
     <div className="space-y-6">
       <Card>
         <CardHeader>
-          <CardTitle>App de Telemedicina</CardTitle>
+          <CardTitle>Consulta de Telemedicina</CardTitle>
         </CardHeader>
         <CardContent>
           <div className="aspect-video bg-black rounded-lg mb-4 relative">
@@ -85,18 +78,18 @@ export function TelemedicinaStage() {
             </AnimatePresence>
             {!inCall && (
               <div className="absolute inset-0 flex items-center justify-center">
-                <p className="text-muted-foreground">Aguardando início da chamada...</p>
+                <p className="text-muted-foreground">Aguardando in��cio da chamada...</p>
               </div>
             )}
           </div>
           <div className="flex justify-center gap-4">
             {!inCall ? (
-              <Button size="lg" onClick={handleStartCall} disabled={showConsent && role === 'patient'}>
-                <Video className="mr-2 h-5 w-5" /> Iniciar Chamada
+              <Button size="lg" onClick={handleStartCall} disabled={showConsent}>
+                <VideoCamera className="mr-2 h-5 w-5" /> Iniciar Chamada
               </Button>
             ) : (
               <Button size="lg" variant="destructive" onClick={handleEndCall}>
-                <PhoneOff className="mr-2 h-5 w-5" /> Encerrar Chamada
+                <PhoneDisconnect className="mr-2 h-5 w-5" /> Encerrar Chamada
               </Button>
             )}
           </div>
@@ -105,24 +98,18 @@ export function TelemedicinaStage() {
       {(isProcessing || summary) && (
         <Card>
           <CardHeader>
-            <CardTitle className="flex items-center justify-between">
-              <div className="flex items-center gap-2"><Sparkle /> Resumo AI da Consulta Remota</div>
-              <Badge variant="destructive">Assinatura Digital Requerida</Badge>
-            </CardTitle>
+            <CardTitle className="flex items-center gap-2"><Sparkle /> Resumo da IA</CardTitle>
           </CardHeader>
-          <CardContent className="space-y-4">
+          <CardContent>
             {isProcessing && !summary ? (
               <Skeleton className="h-32 w-full" />
             ) : (
-              <Textarea value={summary} readOnly={role !== 'professional'} rows={8} />
-            )}
-            {role === 'professional' && summary && (
-              <Button><Signature className="mr-2 h-4 w-4" /> Assinar Digitalmente a Consulta</Button>
+              <Textarea value={summary} readOnly rows={8} />
             )}
           </CardContent>
         </Card>
       )}
-      <AccessGrantModal open={showConsent && role === 'patient'} onOpenChange={(open) => {
+      <AccessGrantModal open={showConsent} onOpenChange={(open) => {
         if (!open) setShowConsent(false);
       }} />
     </div>

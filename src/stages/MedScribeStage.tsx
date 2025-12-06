@@ -59,7 +59,7 @@ export function MedScribeStage() {
         toast.success("Processamento concluído!");
       } else {
         toast.error("Falha no processamento", {
-          description: result.error || "Não foi possível gerar a documentação.",
+          description: result.error || "N��o foi possível gerar a documentação.",
         });
       }
       setIsProcessing(false);
@@ -104,7 +104,7 @@ export function MedScribeStage() {
               onClick={handleToggleRecording}
               disabled={isProcessing}
             >
-              {isRecording ? <Stop size={48} /> : <Mic size={48} />}
+              {isRecording ? <Stop className="h-8 w-8" /> : <Mic size={48} />}
             </Button>
           </motion.div>
           <p className="mt-4 text-muted-foreground">

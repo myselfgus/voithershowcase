@@ -47,6 +47,52 @@ export function userRoutes(app: Hono<{ Bindings: Env }>) {
         const deleted = await unregisterSession(c.env, sessionId);
         return c.json({ success: deleted, data: { deleted } });
     });
+    // --- HEALTHOS ACTOR MANAGEMENT ---
+    app.get('/api/actors/:type', async (c) => {
+        const { type } = c.req.param();
+        const controller = getAppController(c.env);
+        const stored = await controller.ctx.storage.get<Record<string, any[]>>('actors') || {};
+        const actors = stored[type] || [];
+        return c.json({ success: true, data: actors });
+    });
+    app.post('/api/actors/:type', async (c) => {
+        const { type } = c.req.param();
+        const body = await c.req.json();
+        const controller = getAppController(c.env);
+        let stored = await controller.ctx.storage.get<Record<string, any[]>>('actors') || {};
+        if (!stored[type]) stored[type] = [];
+        const id = `${type}_${crypto.randomUUID()}`;
+        const newActor = { id, ...body };
+        stored[type].push(newActor);
+        await controller.ctx.storage.put('actors', stored);
+        return c.json({ success: true, data: newActor }, 201);
+    });
+    app.put('/api/actors/:type/:id', async (c) => {
+        const { type, id } = c.req.param();
+        const body = await c.req.json();
+        const controller = getAppController(c.env);
+        let stored = await controller.ctx.storage.get<Record<string, any[]>>('actors') || {};
+        if (!stored[type]) return c.json({ success: false, error: 'Not found' }, 404);
+        const actorIndex = stored[type].findIndex(actor => actor.id === id);
+        if (actorIndex === -1) return c.json({ success: false, error: 'Not found' }, 404);
+        const updatedActor = { ...stored[type][actorIndex], ...body };
+        stored[type][actorIndex] = updatedActor;
+        await controller.ctx.storage.put('actors', stored);
+        return c.json({ success: true, data: updatedActor });
+    });
+    app.delete('/api/actors/:type/:id', async (c) => {
+        const { type, id } = c.req.param();
+        const controller = getAppController(c.env);
+        let stored = await controller.ctx.storage.get<Record<string, any[]>>('actors') || {};
+        if (!stored[type]) return c.json({ success: false, error: 'Not found' }, 404);
+        const initialLength = stored[type].length;
+        stored[type] = stored[type].filter(actor => actor.id !== id);
+        if (stored[type].length === initialLength) {
+            return c.json({ success: false, error: 'Not found' }, 404);
+        }
+        await controller.ctx.storage.put('actors', stored);
+        return c.json({ success: true });
+    });
     // --- HEALTHOS MOCK ROUTES ---
     app.get('/api/status', (c) => {
         return c.json({
@@ -57,30 +103,5 @@ export function userRoutes(app: Hono<{ Bindings: Env }>) {
                 stagesActive: 4,
             }
         });
-    });
-    // Mock Actor CRUD
-    app.get('/api/actors/:type', async (c) => {
-        const { type } = c.req.param();
-        // In a real app, this would query a Durable Object or D1
-        return c.json({ success: true, data: [] });
-    });
-    app.post('/api/actors/:type', async (c) => {
-        const { type } = c.req.param();
-        const body = await c.req.json();
-        const id = `${type}_${crypto.randomUUID()}`;
-        // In a real app, this would persist to a Durable Object
-        console.log(`[MOCK] Creating ${type} actor with ID ${id}`);
-        return c.json({ success: true, data: { id, ...body } });
-    });
-    app.put('/api/actors/:type/:id', async (c) => {
-        const { type, id } = c.req.param();
-        const body = await c.req.json();
-        console.log(`[MOCK] Updating ${type} actor ${id}`);
-        return c.json({ success: true, data: { id, ...body } });
-    });
-    app.delete('/api/actors/:type/:id', async (c) => {
-        const { type, id } = c.req.param();
-        console.log(`[MOCK] Deleting ${type} actor ${id}`);
-        return c.json({ success: true });
     });
 }
