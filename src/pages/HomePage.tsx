@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { Link } from 'react-router-dom';
 import { motion, useScroll, useTransform, AnimatePresence } from 'framer-motion';
 import { ArrowDown, PenNib, ArrowsClockwise, Calendar, Monitor, LockKey, CubeFocus, ShieldCheck, Sparkle, X } from '@phosphor-icons/react';
 import { Toaster, toast } from '@/components/ui/sonner';
@@ -19,8 +20,8 @@ import { chatService } from '@/lib/chat';
 import styles from '@/styles/homepage.module.css';
 import { usePrefersReducedMotion } from '@/hooks/use-prefers-reduced-motion';
 const Section: React.FC<{ children: React.ReactNode; className?: string; id: string }> = ({ children, className, id }) => (
-  <section id={id} className={`w-full py-24 md:py-32 ${className}`}>
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+  <section id={id} className={`w-full ${className}`}>
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-24 md:py-32">
       {children}
     </div>
   </section>
@@ -55,15 +56,18 @@ export function HomePage() {
   const handleTranscriptionDemo = async () => {
     setIsTranscribing(true);
     setTranscription(null);
+    toast.info("Iniciando demonstração do MedScribe...", {
+      description: "A IA está processando a transcrição da consulta.",
+    });
     const mockAudioText = "Paciente, 45 anos, sexo masculino, relata dor abdominal intensa no quadrante superior direito há 2 dias, com irradiação para as costas. A dor piora após alimentação gordurosa. Nega febre, mas refere náuseas e um episódio de vômito. Ao exame, abdome doloroso à palpação em hipocôndrio direito, com sinal de Murphy positivo.";
     let accumulatedJson = '';
     try {
       await chatService.demoMedScribeTranscription(mockAudioText, (chunk) => {
         accumulatedJson += chunk;
       });
-      // Attempt to parse the complete JSON object
       const parsed = JSON.parse(accumulatedJson);
       setTranscription(parsed);
+      toast.success("Transcrição concluída!");
     } catch (error) {
       console.error("Transcription parsing error:", error);
       toast.error("Falha na demonstração", { description: "Não foi possível processar a transcrição. Tente novamente." });
@@ -134,7 +138,6 @@ export function HomePage() {
             </div>
           </div>
           <div className="space-y-6">
-            {/* Feature points */}
             <div className="flex items-start gap-4">
               <ShieldCheck weight="fill" className="w-8 h-8 text-healthos-prism-start flex-shrink-0 mt-1" />
               <div>
@@ -235,11 +238,12 @@ export function HomePage() {
         />
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
           {ecosystemModules.map((mod) => {
-            const Icon = iconMap[mod.icon];
+            const Icon = mod.icon;
             return (
               <div
                 key={mod.id}
                 onMouseEnter={mod.id === 'telemedicine' ? () => setShowAccessModal(true) : undefined}
+                className="h-full"
               >
                 <GlassCard className="transition-all duration-300 hover:shadow-prism-glow hover:-translate-y-1 h-full">
                   <div className="p-6 text-center flex flex-col items-center justify-start h-full">
@@ -255,6 +259,11 @@ export function HomePage() {
             );
           })}
         </div>
+        <div className="text-center mt-12">
+            <Button variant="outline" asChild>
+                <Link to="/marketplace">Explorar Marketplace de Stages</Link>
+            </Button>
+        </div>
       </Section>
       {/* Footer */}
       <footer className="border-t border-healthos-ice">
@@ -262,6 +271,11 @@ export function HomePage() {
           <div className="text-center text-sm text-muted-foreground">
             <p>&copy; {new Date().getFullYear()} Voither HealthOS. Todos os direitos reservados.</p>
             <p className="mt-2">Construído com ❤️ na Cloudflare.</p>
+            <div className="mt-4">
+                <Button variant="link" asChild>
+                    <Link to="/stages">Acessar Portal do Desenvolvedor</Link>
+                </Button>
+            </div>
             <Separator className="my-4 max-w-xs mx-auto" />
             <p className="text-xs max-w-2xl mx-auto">
               Nota: A capacidade de requisições de IA é limitada — a cota é compartilhada entre aplicativos; uso intenso pode sofrer limitação de taxa.
