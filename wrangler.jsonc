@@ -1,6 +1,6 @@
 {
 	"$schema": "node_modules/wrangler/config-schema.json",
-	"name": "healthos-cast-xfzljkemdwplk5idevorv",
+	"name": "voithershowcase",
 	"main": "worker/index.ts",
 	"compatibility_date": "2025-04-24",
 	"compatibility_flags": ["nodejs_compat"],
