@@ -1,73 +1,49 @@
 import { useRouteError, isRouteErrorResponse, useNavigate } from 'react-router-dom';
-import { motion } from 'framer-motion';
+import { ErrorFallback } from './ErrorFallback';
 
 export function RouteErrorBoundary() {
   const error = useRouteError();
   const navigate = useNavigate();
 
-  let errorMessage = 'Ocorreu um erro inesperado.';
-  let errorCode = '500';
+  let title = "Oops! Something went wrong";
+  let message = "We're aware of the issue and actively working to fix it.";
+  let errorDetails: Error | undefined;
 
   if (isRouteErrorResponse(error)) {
-    errorCode = String(error.status);
     if (error.status === 404) {
-      errorMessage = 'A página que você está procurando não foi encontrada.';
+      title = "Page Not Found";
+      message = "The page you're looking for doesn't exist or has been moved.";
     } else if (error.status === 401) {
-      errorMessage = 'Você não tem permissão para acessar esta página.';
+      title = "Unauthorized";
+      message = "You need to be logged in to access this page.";
+    } else if (error.status === 403) {
+      title = "Access Denied";
+      message = "You don't have permission to access this page.";
     } else if (error.status === 503) {
-      errorMessage = 'O serviço está temporariamente indisponível.';
+      title = "Service Unavailable";
+      message = "The service is temporarily unavailable. Please try again later.";
     } else {
-      errorMessage = error.statusText || errorMessage;
+      title = `Error ${error.status}`;
+      message = error.statusText || "An unexpected error occurred.";
     }
   } else if (error instanceof Error) {
-    errorMessage = error.message;
+    // Only expose error details in development
+    if (process.env.NODE_ENV === 'development') {
+      errorDetails = error;
+    }
+    // Use generic message in production for security
+    message = process.env.NODE_ENV === 'development' 
+      ? error.message 
+      : "An unexpected error occurred. Please try again.";
   }
 
   return (
-    <div className="min-h-screen w-full flex items-center justify-center bg-healthos-porcelain dark:bg-healthos-ink p-4">
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5 }}
-        className="max-w-md w-full text-center"
-      >
-        <motion.div
-          initial={{ scale: 0.8 }}
-          animate={{ scale: 1 }}
-          transition={{ delay: 0.2, type: 'spring', stiffness: 200 }}
-          className="w-24 h-24 mx-auto mb-6 rounded-full bg-red-100 dark:bg-red-900/20 flex items-center justify-center"
-        >
-          <span className="text-4xl font-bold text-red-500">{errorCode}</span>
-        </motion.div>
-
-        <h1 className="text-2xl font-bold mb-2 text-healthos-ink dark:text-healthos-porcelain">
-          Oops! Algo deu errado
-        </h1>
-
-        <p className="text-muted-foreground mb-8">
-          {errorMessage}
-        </p>
-
-        <div className="flex flex-col sm:flex-row gap-3 justify-center">
-          <motion.button
-            whileHover={{ scale: 1.02 }}
-            whileTap={{ scale: 0.98 }}
-            onClick={() => navigate(-1)}
-            className="px-6 py-2.5 rounded-lg border border-healthos-ice hover:bg-healthos-ice/20 transition-colors text-healthos-ink dark:text-healthos-porcelain"
-          >
-            Voltar
-          </motion.button>
-
-          <motion.button
-            whileHover={{ scale: 1.02 }}
-            whileTap={{ scale: 0.98 }}
-            onClick={() => navigate('/dashboard')}
-            className="px-6 py-2.5 rounded-lg bg-gradient-to-r from-violet-500 to-fuchsia-500 text-white hover:from-violet-600 hover:to-fuchsia-600 transition-colors"
-          >
-            Ir para o Dashboard
-          </motion.button>
-        </div>
-      </motion.div>
-    </div>
+    <ErrorFallback
+      title={title}
+      message={message}
+      error={errorDetails}
+      onRetry={() => window.location.reload()}
+      onGoHome={() => navigate('/')}
+    />
   );
 }
