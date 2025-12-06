@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { Bot, Wrench } from 'lucide-react';
+import { Bot, Wrench, Info } from '@phosphor-icons/react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import {
@@ -9,7 +9,6 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from "@/components/ui/accordion";
-import { useCurrentRole } from '@/stores/useRoleStore';
 interface ToolDefinition {
   type: 'function';
   function: {
@@ -21,17 +20,17 @@ interface ToolDefinition {
 export function ToolActorList() {
   const [tools, setTools] = useState<ToolDefinition[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const role = useCurrentRole();
   useEffect(() => {
+    // Mock fetching tool definitions
     const fetchTools = async () => {
       setIsLoading(true);
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      await new Promise(resolve => setTimeout(resolve, 1000)); // Simulate network delay
       setTools([
         {
           type: 'function',
           function: {
             name: 'get_weather',
-            description: 'Obter informações climáticas atuais para uma localidade.',
+            description: 'Get current weather information for a location',
             parameters: { type: 'object', properties: { location: { type: 'string' } } },
           },
         },
@@ -39,7 +38,7 @@ export function ToolActorList() {
           type: 'function',
           function: {
             name: 'web_search',
-            description: 'Pesquisar na web ou buscar conteúdo de uma URL específica.',
+            description: 'Search the web or fetch content from a URL',
             parameters: { type: 'object', properties: { query: { type: 'string' }, url: { type: 'string' } } },
           },
         },
@@ -47,7 +46,7 @@ export function ToolActorList() {
           type: 'function',
           function: {
             name: 'start_transcription',
-            description: 'Inicia a escuta ambiente para uma consulta médica.',
+            description: 'Starts ambient listening for a medical consultation.',
             parameters: { type: 'object', properties: {} },
           },
         },
@@ -55,7 +54,7 @@ export function ToolActorList() {
           type: 'function',
           function: {
             name: 'generate_soap_note',
-            description: 'Gera uma nota SOAP a partir da transcrição de uma consulta.',
+            description: 'Generates a SOAP note from a consultation transcript.',
             parameters: { type: 'object', properties: { transcript: { type: 'string' } } },
           },
         },
@@ -64,22 +63,12 @@ export function ToolActorList() {
     };
     fetchTools();
   }, []);
-  if (!['professional', 'service'].includes(role)) {
-    return (
-      <Card>
-        <CardHeader><CardTitle>Acesso Restrito</CardTitle></CardHeader>
-        <CardContent>
-          <p className="text-muted-foreground">A visualização de ferramentas de saúde está disponível apenas para profissionais e serviços.</p>
-        </CardContent>
-      </Card>
-    );
-  }
   return (
     <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-3">
-            <Bot className="h-6 w-6" /> Ferramentas de Saúde (MCPs)
+            <Bot size={24} /> Atores de Ferramenta (MCPs)
           </CardTitle>
         </CardHeader>
         <CardContent>
@@ -96,7 +85,7 @@ export function ToolActorList() {
                   <AccordionTrigger>
                     <div className="flex items-center gap-2">
                       <Wrench />
-                      Ferramenta: {tool.function.name}
+                      {tool.function.name}
                     </div>
                   </AccordionTrigger>
                   <AccordionContent>

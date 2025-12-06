@@ -1,5 +1,12 @@
 import type { Message, ChatState, ToolCall, WeatherResult, MCPResult, ErrorResult, SessionInfo } from '../../worker/types';
 import { errorReporter } from '@/lib/errorReporter';
+export interface ErrorReport extends Error {
+  level: 'info' | 'warning' | 'error';
+  url: string;
+  timestamp: string;
+  userAgent?: string;
+  context?: Record<string, unknown>;
+}
 export interface ChatResponse {
   success: boolean;
   data?: ChatState;
@@ -17,6 +24,15 @@ export const MODELS = [
   { id: 'google-ai-studio/gemini-2.5-pro', name: 'Gemini 2.5 Pro' },
   { id: 'google-ai-studio/gemini-2.0-flash', name: 'Gemini 2.0 Flash' },
 ];
+export const medscribeSystemPrompt = `
+      Você é o MedScribe, um assistente de IA especializado em documentação médica.
+      Transcreva a seguinte consulta em uma nota SOAP (Subjetivo, Objetivo, Avaliação, Plano).
+      Seja conciso, preciso e use terminologia médica apropriada.
+      Formate a saída como um objeto JSON com as chaves "soapNote" e "insights".
+      A chave "soapNote" deve conter um objeto com as chaves "S", "O", "A", "P".
+      A chave "insights" deve ser um array de strings com 2-3 pontos importantes ou alertas.
+      Apenas retorne o objeto JSON, sem nenhum texto ou formatação adicional.
+    `;
 class ChatService {
   private sessionId: string;
   private baseUrl: string;
@@ -58,28 +74,19 @@ class ChatService {
     } catch (error) {
       console.error('Failed to send message:', error);
       const err = error as Error;
-      errorReporter.report({ 
-        ...err, 
+      errorReporter.report({
+        ...err,
         message: err.message,
-        level: 'error', 
-        url: window.location.href, 
-        timestamp: new Date().toISOString(), 
-        userAgent: navigator.userAgent 
+        level: 'error',
+        url: window.location.href,
+        timestamp: new Date().toISOString(),
+        userAgent: navigator.userAgent
       });
       return { success: false, error: 'Failed to send message' };
     }
   }
   async demoMedScribeTranscription(): Promise<DemoResponse> {
     const mockAudioText = "Paciente, 45 anos, sexo masculino, relata dor abdominal intensa no quadrante superior direito há 2 dias, com irradiação para as costas. A dor piora após alimentação gordurosa. Nega febre, mas refere náuseas e um episódio de vômito. Ao exame, abdome doloroso à palpação em hipocôndrio direito, com sinal de Murphy positivo.";
-    const systemPrompt = `
-      Você é o MedScribe, um assistente de IA especializado em documentação médica.
-      Transcreva a seguinte consulta em uma nota SOAP (Subjetivo, Objetivo, Avaliação, Plano).
-      Seja conciso, preciso e use terminologia médica apropriada.
-      Formate a saída como um objeto JSON com as chaves "soapNote" e "insights".
-      A chave "soapNote" deve conter um objeto com as chaves "S", "O", "A", "P".
-      A chave "insights" deve ser um array de strings com 2-3 pontos importantes ou alertas.
-      Apenas retorne o objeto JSON, sem nenhum texto ou formatação adicional.
-    `;
     const fallbackData: TranscriptionResult = {
       soapNote: {
         S: "Paciente relata dor abdominal intensa no quadrante superior direito.",
@@ -97,36 +104,40 @@ class ChatService {
       this.switchSession(tempSessionId);
       await this.sendMessage(mockAudioText, 'google-ai-studio/gemini-2.5-pro', (chunk) => {
         accumulatedJson += chunk;
-      }, systemPrompt);
+      }, medscribeSystemPrompt);
       this.switchSession(originalSessionId);
       await this.deleteSession(tempSessionId);
+      // Strip markdown fences before parsing
+      const cleanJson = accumulatedJson.replace(/```json\n?|\n?```/g, '').trim();
       try {
-        const parsed = JSON.parse(accumulatedJson);
+        const parsed = JSON.parse(cleanJson);
         return { success: true, data: parsed };
       } catch (parseError) {
-        console.error("JSON parsing error in demo:", parseError, "Raw response:", accumulatedJson);
+        console.error("JSON parsing error in demo:", parseError, "Raw response:", accumulatedJson, "Cleaned response:", cleanJson);
         const err = new Error("MedScribe JSON parse failed");
-        errorReporter.report({ 
-          message: err.message, 
-          error: err,
-          level: 'error', 
-          url: window.location.href, 
-          timestamp: new Date().toISOString(), 
+        errorReporter.report({
+          message: err.message,
+          name: err.name,
+          stack: err.stack,
+          level: 'error',
+          url: window.location.href,
+          timestamp: new Date().toISOString(),
           userAgent: navigator.userAgent,
-          context: { rawResponse: accumulatedJson }
+          context: { rawResponse: accumulatedJson, cleanedJson: cleanJson }
         });
         return { success: true, data: fallbackData }; // Return fallback on parse error
       }
     } catch (error) {
       console.error("MedScribe demo failed:", error);
       const err = error as Error;
-      errorReporter.report({ 
-        ...err, 
+      errorReporter.report({
         message: err.message,
-        level: 'error', 
-        url: window.location.href, 
-        timestamp: new Date().toISOString(), 
-        userAgent: navigator.userAgent 
+        name: err.name,
+        stack: err.stack,
+        level: 'error',
+        url: window.location.href,
+        timestamp: new Date().toISOString(),
+        userAgent: navigator.userAgent
       });
       return { success: false, error: 'Demo failed', data: fallbackData }; // Return fallback on network/API error
     }

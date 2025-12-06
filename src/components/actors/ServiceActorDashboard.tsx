@@ -6,7 +6,6 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { toast } from 'sonner';
-import { useCurrentRole } from '@/stores/useRoleStore';
 interface ServiceProfile {
   name: string;
   address: string;
@@ -15,7 +14,6 @@ interface ServiceProfile {
 export function ServiceActorDashboard() {
   const [services, setServices] = useState<ServiceProfile[]>([]);
   const [isCreating, setIsCreating] = useState(false);
-  const role = useCurrentRole();
   const handleCreateService = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     const formData = new FormData(e.currentTarget);
@@ -28,44 +26,34 @@ export function ServiceActorDashboard() {
         id: `service_${crypto.randomUUID()}`,
       };
       setServices(prev => [...prev, newService]);
-      toast.success('Unidade de Serviço Criada', {
+      toast.success('Unidade de Saúde Criada', {
         description: `${name} foi adicionada ao sistema.`,
       });
       setIsCreating(false);
     }
   };
-  if (role !== 'service') {
-    return (
-      <Card>
-        <CardHeader><CardTitle>Acesso Restrito</CardTitle></CardHeader>
-        <CardContent>
-          <p className="text-muted-foreground">Apenas o Ponto de Vista de Serviço pode gerenciar unidades.</p>
-        </CardContent>
-      </Card>
-    );
-  }
   return (
     <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="space-y-6">
       <div className="flex justify-between items-center">
-        <h2 className="text-2xl font-bold font-display">Painel de Unidades de Serviço</h2>
+        <h2 className="text-2xl font-bold font-display">Atores de Serviço (Unidades)</h2>
         <Button onClick={() => setIsCreating(prev => !prev)}>
-          {isCreating ? 'Cancelar' : 'Adicionar Unidade de Serviço'}
+          {isCreating ? 'Cancelar' : 'Adicionar Unidade'}
         </Button>
       </div>
       {isCreating && (
         <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }}>
           <Card>
             <CardHeader>
-              <CardTitle>Nova Unidade de Serviço</CardTitle>
+              <CardTitle>Nova Unidade de Saúde</CardTitle>
             </CardHeader>
             <CardContent>
               <form onSubmit={handleCreateService} className="space-y-4">
                 <div>
-                  <Label htmlFor="name">Nome da Unidade de Serviço</Label>
+                  <Label htmlFor="name">Nome da Unidade</Label>
                   <Input id="name" name="name" required />
                 </div>
                 <div>
-                  <Label htmlFor="address">Endereço da Unidade</Label>
+                  <Label htmlFor="address">Endereço</Label>
                   <Input id="address" name="address" required />
                 </div>
                 <Button type="submit">Salvar Unidade</Button>
@@ -87,16 +75,16 @@ export function ServiceActorDashboard() {
               <div>
                 <h4 className="font-semibold text-sm mb-2">Estatísticas (Mock)</h4>
                 <div className="flex justify-between text-sm">
-                  <div className="flex items-center gap-2"><Users /> Pacientes Ativos na Unidade: <strong>{Math.floor(Math.random() * 100)}</strong></div>
-                  <div className="flex items-center gap-2"><ChartBar /> Atendimentos/Dia na Unidade: <strong>{Math.floor(Math.random() * 50)}</strong></div>
+                  <div className="flex items-center gap-2"><Users /> Pacientes Ativos: <strong>{Math.floor(Math.random() * 100)}</strong></div>
+                  <div className="flex items-center gap-2"><ChartBar /> Atendimentos/Dia: <strong>{Math.floor(Math.random() * 50)}</strong></div>
                 </div>
               </div>
-              <p className="text-xs text-muted-foreground pt-2">ID da Unidade: {service.id}</p>
+              <p className="text-xs text-muted-foreground pt-2">ID do Ator: {service.id}</p>
             </CardContent>
           </Card>
         ))}
         {services.length === 0 && !isCreating && (
-          <p className="text-muted-foreground col-span-full text-center py-8">Nenhuma unidade de serviço criada.</p>
+          <p className="text-muted-foreground col-span-full text-center py-8">Nenhuma unidade de saúde criada.</p>
         )}
       </div>
     </motion.div>

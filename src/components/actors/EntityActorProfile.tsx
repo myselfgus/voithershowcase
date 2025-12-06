@@ -6,7 +6,6 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { toast } from 'sonner';
-import { useCurrentRole } from '@/stores/useRoleStore';
 interface EntityProfile {
   name: string;
   specialty: string;
@@ -16,7 +15,6 @@ interface EntityProfile {
 export function EntityActorProfile() {
   const [profiles, setProfiles] = useState<EntityProfile[]>([]);
   const [isCreating, setIsCreating] = useState(false);
-  const role = useCurrentRole();
   const handleCreateProfile = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     const formData = new FormData(e.currentTarget);
@@ -31,26 +29,16 @@ export function EntityActorProfile() {
         id: `entity_${crypto.randomUUID()}`,
       };
       setProfiles(prev => [...prev, newProfile]);
-      toast.success('Perfil de Usuário Profissional Criado', {
+      toast.success('Perfil de Entidade Criado', {
         description: `Dr(a). ${name} foi adicionado(a) ao sistema.`,
       });
       setIsCreating(false);
     }
   };
-  if (role !== 'service') {
-    return (
-      <Card>
-        <CardHeader><CardTitle>Acesso Restrito</CardTitle></CardHeader>
-        <CardContent>
-          <p className="text-muted-foreground">Apenas unidades de serviço podem gerenciar perfis profissionais.</p>
-        </CardContent>
-      </Card>
-    );
-  }
   return (
     <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="space-y-6">
       <div className="flex justify-between items-center">
-        <h2 className="text-2xl font-bold font-display">Perfis de Usuários Profissionais</h2>
+        <h2 className="text-2xl font-bold font-display">Atores de Entidade (Profissionais)</h2>
         <Button onClick={() => setIsCreating(prev => !prev)}>
           {isCreating ? 'Cancelar' : 'Criar Novo Perfil'}
         </Button>
@@ -59,7 +47,7 @@ export function EntityActorProfile() {
         <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }}>
           <Card>
             <CardHeader>
-              <CardTitle>Novo Perfil de Usuário Profissional</CardTitle>
+              <CardTitle>Novo Perfil de Profissional</CardTitle>
             </CardHeader>
             <CardContent>
               <form onSubmit={handleCreateProfile} className="space-y-4">
@@ -68,11 +56,11 @@ export function EntityActorProfile() {
                   <Input id="name" name="name" required />
                 </div>
                 <div>
-                  <Label htmlFor="specialty">Especialidade Médica</Label>
+                  <Label htmlFor="specialty">Especialidade</Label>
                   <Input id="specialty" name="specialty" required />
                 </div>
                 <div>
-                  <Label htmlFor="crm">Número do CRM</Label>
+                  <Label htmlFor="crm">CRM</Label>
                   <Input id="crm" name="crm" required />
                 </div>
                 <Button type="submit">Salvar Perfil</Button>
@@ -98,12 +86,12 @@ export function EntityActorProfile() {
                 <IdentificationCard />
                 <span>CRM: {profile.crm}</span>
               </div>
-              <p className="text-xs text-muted-foreground pt-2">ID do Perfil: {profile.id}</p>
+              <p className="text-xs text-muted-foreground pt-2">ID do Ator: {profile.id}</p>
             </CardContent>
           </Card>
         ))}
         {profiles.length === 0 && !isCreating && (
-          <p className="text-muted-foreground col-span-full text-center py-8">Nenhum perfil profissional criado.</p>
+          <p className="text-muted-foreground col-span-full text-center py-8">Nenhum perfil de entidade criado.</p>
         )}
       </div>
     </motion.div>

@@ -3,22 +3,20 @@ import { enableMapSet } from "immer";
 enableMapSet();
 import { StrictMode, lazy, Suspense } from 'react';
 import { createRoot } from 'react-dom/client';
-import { createBrowserRouter, RouterProvider, Outlet } from "react-router-dom";
+import { createBrowserRouter, RouterProvider, Outlet, Navigate } from "react-router-dom";
 import { AnimatePresence } from 'framer-motion';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
 import { RouteErrorBoundary } from '@/components/RouteErrorBoundary';
-import { Skeleton } from '@/components/ui/skeleton';
+import { DashboardLayout } from '@/components/layout/DashboardLayout';
 import '@/index.css';
 const HomePage = lazy(() => import('@/pages/HomePage').then(module => ({ default: module.HomePage })));
-const StageViewer = lazy(() => import('@/pages/StageViewer').then(module => ({ default: module.StageViewer })));
-const ScriptEditor = lazy(() => import('@/pages/ScriptEditor').then(module => ({ default: module.ScriptEditor })));
-const Marketplace = lazy(() => import('@/pages/Marketplace').then(module => ({ default: module.Marketplace })));
-const PageLoader = () => (
-  <div className="w-screen h-screen flex items-center justify-center">
+const Dashboard = lazy(() => import('@/pages/Dashboard').then(module => ({ default: module.Dashboard })));
+export const PageLoader = () => (
+  <div className="w-screen h-screen flex items-center justify-center bg-healthos-porcelain">
     <div className="w-16 h-16 border-4 border-healthos-ice border-t-healthos-prism-start rounded-full animate-spin"></div>
   </div>
 );
-const AnimatedOutlet = () => (
+export const AnimatedOutlet = () => (
   <AnimatePresence mode="wait">
     <Outlet />
   </AnimatePresence>
@@ -30,19 +28,28 @@ const router = createBrowserRouter([
     errorElement: <RouteErrorBoundary />,
     children: [
       { index: true, element: <HomePage /> },
-      { path: "/stages", element: <StageViewer /> },
-      { path: "/scripts", element: <ScriptEditor /> },
-      { path: "/marketplace", element: <Marketplace /> },
+      {
+        path: "dashboard/*",
+        element: (
+          <DashboardLayout>
+            <Dashboard />
+          </DashboardLayout>
+        ),
+      },
+      { path: "*", element: <Navigate to="/" replace /> }
     ]
   }
 ]);
-createRoot(document.getElementById('root')!).render(
-  <StrictMode>
-    <ErrorBoundary>
-      <Suspense fallback={<PageLoader />}>
-        <RouterProvider router={router} />
-      </Suspense>
-    </ErrorBoundary>
-  </StrictMode>,
-);
-export { PageLoader, AnimatedOutlet };
+const rootElement = document.getElementById('root')!;
+if (!rootElement.innerHTML) {
+  const root = createRoot(rootElement);
+  root.render(
+    <StrictMode>
+      <ErrorBoundary>
+        <Suspense fallback={<PageLoader />}>
+          <RouterProvider router={router} />
+        </Suspense>
+      </ErrorBoundary>
+    </StrictMode>,
+  );
+}

@@ -8,8 +8,6 @@ import { Label } from '@/components/ui/label';
 import { Separator } from '@/components/ui/separator';
 import { AccessGrantModal } from '@/components/ui/AccessGrantModal';
 import { toast } from 'sonner';
-import { useCurrentRole } from '@/stores/useRoleStore';
-import { Badge } from '@/components/ui/badge';
 interface PatientProfile {
   name: string;
   dob: string;
@@ -23,10 +21,9 @@ interface AccessGrant {
   expires: string;
 }
 export function PatientActorVault() {
-  const [profile, setProfile] = useState<PatientProfile | null>({ name: 'Maria Silva', dob: '1980-05-15', id: `patient_001` });
+  const [profile, setProfile] = useState<PatientProfile | null>(null);
   const [accessGrants, setAccessGrants] = useState<AccessGrant[]>([]);
   const [showAccessModal, setShowAccessModal] = useState(false);
-  const role = useCurrentRole();
   const handleCreateProfile = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     const formData = new FormData(e.currentTarget);
@@ -39,28 +36,21 @@ export function PatientActorVault() {
       });
     }
   };
+  const handleGrantAccess = () => {
+    setShowAccessModal(true);
+  };
   const handleRevokeAccess = (id: string) => {
     setAccessGrants(prev => prev.filter(grant => grant.id !== id));
-    toast.info('Acesso aos Dados Revogado', {
+    toast.info('Acesso Revogado', {
       description: 'O acesso aos seus dados foi revogado com sucesso.',
     });
   };
-  if (role !== 'patient') {
-    return (
-      <Card>
-        <CardHeader><CardTitle>Acesso Restrito</CardTitle></CardHeader>
-        <CardContent>
-          <p className="text-muted-foreground">O gerenciador de perfil do paciente só pode ser acessado pelo próprio paciente. Altere seu Ponto de Vista para "Paciente" para interagir.</p>
-        </CardContent>
-      </Card>
-    );
-  }
   if (!profile) {
     return (
       <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
         <Card>
           <CardHeader>
-            <CardTitle>Criar Perfil do Paciente</CardTitle>
+            <CardTitle>Criar Cofre de Dados do Paciente</CardTitle>
           </CardHeader>
           <CardContent>
             <form onSubmit={handleCreateProfile} className="space-y-4">
@@ -85,15 +75,14 @@ export function PatientActorVault() {
         <CardHeader className="flex flex-row items-center justify-between">
           <div className="flex items-center gap-3">
             <User size={24} />
-            <CardTitle>Perfil do Paciente</CardTitle>
+            <CardTitle>{profile.name}</CardTitle>
           </div>
           <Button variant="destructive" size="sm" onClick={() => setProfile(null)}>
-            Excluir Perfil
+            Excluir Cofre
           </Button>
         </CardHeader>
         <CardContent>
-          <p className="font-semibold">{profile.name}</p>
-          <p className="text-sm text-muted-foreground">ID do Perfil: {profile.id}</p>
+          <p className="text-sm text-muted-foreground">ID do Ator: {profile.id}</p>
           <p className="text-sm text-muted-foreground">Data de Nascimento: {profile.dob}</p>
         </CardContent>
       </Card>
@@ -101,10 +90,10 @@ export function PatientActorVault() {
         <CardHeader className="flex flex-row items-center justify-between">
           <div className="flex items-center gap-3">
             <ShieldCheck size={24} />
-            <CardTitle>Gerenciar Acesso aos Dados</CardTitle>
+            <CardTitle>Controle de Acesso Soberano</CardTitle>
           </div>
-          <Button onClick={() => setShowAccessModal(true)}>
-            <Plus className="mr-2 h-4 w-4" /> Simular Pedido de Acesso
+          <Button onClick={handleGrantAccess}>
+            <Plus className="mr-2 h-4 w-4" /> Conceder Acesso
           </Button>
         </CardHeader>
         <CardContent>
@@ -116,11 +105,11 @@ export function PatientActorVault() {
                 <React.Fragment key={grant.id}>
                   <div className="flex items-center justify-between">
                     <div>
-                      <p className="font-semibold">Profissional: {grant.entityName} via {grant.serviceName}</p>
+                      <p className="font-semibold">{grant.entityName} via {grant.serviceName}</p>
                       <p className="text-xs text-muted-foreground">Escopo: {grant.scope} | Expira: {grant.expires}</p>
                     </div>
                     <Button variant="outline" size="sm" onClick={() => handleRevokeAccess(grant.id)}>
-                      <Trash className="mr-2 h-4 w-4" /> Revogar Acesso
+                      <Trash className="mr-2 h-4 w-4" /> Revogar
                     </Button>
                   </div>
                   {index < accessGrants.length - 1 && <Separator />}

@@ -1,6 +1,6 @@
 import React from "react";
 import { Link, useLocation } from "react-router-dom";
-import { Home, FileText, Code } from "lucide-react";
+import { Home, FileText, Code, Users, Layers3 } from "lucide-react";
 import { Storefront } from "@phosphor-icons/react";
 import {
   Sidebar,
@@ -25,7 +25,7 @@ function AppSidebar() {
       <SidebarHeader>
         <Link to="/" className="flex items-center gap-2 px-2 py-1">
           <div className="h-6 w-6 rounded-md bg-gradient-prism" />
-          <span className="text-sm font-medium">HealthOS</span>
+          <span className="text-sm font-medium">HealthOS Cast</span>
         </Link>
       </SidebarHeader>
       <SidebarContent>
@@ -35,6 +35,11 @@ function AppSidebar() {
             <SidebarMenuItem>
               <SidebarMenuButton asChild isActive={isActive('/')}>
                 <Link to="/"><Home className="h-4 w-4" /> <span>Home</span></Link>
+              </SidebarMenuButton>
+            </SidebarMenuItem>
+            <SidebarMenuItem>
+              <SidebarMenuButton asChild isActive={isActive('/dashboard')}>
+                <Link to="/dashboard"><Layers3 className="h-4 w-4" /> <span>Dashboard</span></Link>
               </SidebarMenuButton>
             </SidebarMenuItem>
           </SidebarMenu>
