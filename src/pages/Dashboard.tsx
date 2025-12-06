@@ -1,7 +1,6 @@
 import React from 'react';
-import { Routes, Route, NavLink, useLocation, Navigate } from 'react-router-dom';
+import { Routes, Route, useLocation, Navigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { User, Hospital, Stethoscope, Bot, Layers, FileCode, LayoutDashboard } from 'lucide-react';
 import { PatientActorVault } from '@/components/actors/PatientActorVault';
 import { EntityActorProfile } from '@/components/actors/EntityActorProfile';
 import { ServiceActorDashboard } from '@/components/actors/ServiceActorDashboard';
@@ -14,6 +13,7 @@ import { CastOverview } from './CastOverview';
 import { WindowContainer } from '@/components/layout/WindowContainer';
 import { ScriptRunner } from '@/components/ScriptRunner';
 import { useCurrentRole } from '@/stores/useRoleStore';
+import { ErrorBoundary } from '@/components/ErrorBoundary';
 const routeConfig = {
   '/dashboard/overview': { title: 'Visão Geral do Cast', component: <CastOverview /> },
   '/dashboard/actors/patient': { title: 'Cofre do Paciente', component: <PatientActorVault /> },
@@ -32,6 +32,7 @@ export function Dashboard() {
   const currentRoute = Object.entries(routeConfig).find(([path]) => location.pathname.startsWith(path));
   const title = currentRoute ? currentRoute[1].title : 'Voither HealthOS';
   const getDefaultPathForRole = () => {
+    if (!role) return '/dashboard/overview';
     switch (role) {
       case 'patient': return '/dashboard/actors/patient';
       case 'professional': return '/dashboard/stages/medscribe';
@@ -41,19 +42,21 @@ export function Dashboard() {
   };
   return (
     <WindowContainer title={title}>
-      <Routes>
-        <Route path="/" element={<Navigate to={getDefaultPathForRole()} replace />} />
-        <Route path="/overview" element={<CastOverview />} />
-        <Route path="/actors/patient" element={<PatientActorVault />} />
-        <Route path="/actors/entity" element={<EntityActorProfile />} />
-        <Route path="/actors/service" element={<ServiceActorDashboard />} />
-        <Route path="/stages/medscribe" element={<MedScribeStage />} />
-        <Route path="/stages/regulacao" element={<RegulacaoStage />} />
-        <Route path="/stages/agenda" element={<AgendaStage />} />
-        <Route path="/stages/telemedicina" element={<TelemedicinaStage />} />
-        <Route path="/scripts" element={<ScriptRunner />} />
-        <Route path="/tools" element={<ToolActorList />} />
-      </Routes>
+      <ErrorBoundary>
+        <Routes>
+          <Route path="/" element={<Navigate to={getDefaultPathForRole()} replace />} />
+          <Route path="/overview" element={<CastOverview />} />
+          <Route path="/actors/patient" element={<PatientActorVault />} />
+          <Route path="/actors/entity" element={<EntityActorProfile />} />
+          <Route path="/actors/service" element={<ServiceActorDashboard />} />
+          <Route path="/stages/medscribe" element={<MedScribeStage />} />
+          <Route path="/stages/regulacao" element={<RegulacaoStage />} />
+          <Route path="/stages/agenda" element={<AgendaStage />} />
+          <Route path="/stages/telemedicina" element={<TelemedicinaStage />} />
+          <Route path="/scripts" element={<ScriptRunner />} />
+          <Route path="/tools" element={<ToolActorList />} />
+        </Routes>
+      </ErrorBoundary>
     </WindowContainer>
   );
 }
