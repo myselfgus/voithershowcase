@@ -1,14 +1,24 @@
-import React, { useMemo, useState, useEffect } from 'react';
-import { motion } from 'framer-motion';
-import { PenNib, ArrowsClockwise, Calendar, Monitor, User, Stethoscope, Hospital, Wrench } from '@phosphor-icons/react';
+import React, { useMemo, useState, useEffect, useRef } from 'react';
+import { motion, useDragControls } from 'framer-motion';
+import { PenNib, ArrowsClockwise, Calendar, Monitor, User, Stethoscope, Hospital, Wrench, ChatCircleDots, DotsSixVertical } from '@phosphor-icons/react';
 import { useCurrentRole } from '@/stores/useRoleStore';
 import { Badge } from '@/components/ui/badge';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { useLocation } from 'react-router-dom';
-import { useSwipeable } from 'react-swipeable';
 import { cn } from '@/lib/utils';
-type DockPosition = 'bottom' | 'left' | 'right';
-const allDockItems = [
+
+export interface DockItem {
+  id: string;
+  name: string;
+  icon: React.ComponentType<any>;
+  path: string;
+  roles: string[];
+  isMinimized?: boolean;
+  title?: string;
+}
+
+const allDockItems: DockItem[] = [
+  { id: 'ai-chatbot', name: 'AI Assistant', icon: ChatCircleDots, path: '/dashboard/apps/ai-chat', roles: ['patient', 'professional', 'service'] },
   { id: 'medscribe-app', name: 'MedScribe App', icon: PenNib, path: '/dashboard/apps/medscribe', roles: ['professional', 'service'] },
   { id: 'regulation-center', name: 'Regulation Center', icon: ArrowsClockwise, path: '/dashboard/apps/regulacao', roles: ['professional', 'service'] },
   { id: 'agenda', name: 'Agenda', icon: Calendar, path: '/dashboard/apps/agenda', roles: ['patient', 'professional', 'service'] },
@@ -18,20 +28,47 @@ const allDockItems = [
   { id: 'service-unit', name: 'Service Unit', icon: Hospital, path: '/dashboard/users/service', roles: ['service'] },
   { id: 'health-tools', name: 'Health Tools', icon: Wrench, path: '/dashboard/tools', roles: ['professional', 'service'] },
 ];
-export function Dock({ openWindows, onDockItemClick }: { openWindows: any[], onDockItemClick: (id: string, path: string) => void }) {
+
+interface DockPosition {
+  x: number;
+  y: number;
+}
+
+interface DockProps {
+  openWindows: any[];
+  onDockItemClick: (id: string, path: string) => void;
+}
+
+export function Dock({ openWindows, onDockItemClick }: DockProps) {
   const role = useCurrentRole();
   const location = useLocation();
-  const [position, setPosition] = useState<DockPosition>('bottom');
-  useEffect(() => {
-    const savedPosition = localStorage.getItem('dockPosition') as DockPosition;
-    if (savedPosition && ['bottom', 'left', 'right'].includes(savedPosition)) {
-      setPosition(savedPosition);
+  const dragControls = useDragControls();
+  const constraintsRef = useRef<HTMLDivElement>(null);
+
+  const [position, setPosition] = useState<DockPosition>(() => {
+    const saved = localStorage.getItem('dockPosition');
+    if (saved) {
+      try {
+        return JSON.parse(saved);
+      } catch {
+        return { x: 0, y: 0 };
+      }
     }
-  }, []);
-  const handlePositionChange = (newPosition: DockPosition) => {
-    setPosition(newPosition);
-    localStorage.setItem('dockPosition', newPosition);
-  };
+    return { x: 0, y: 0 };
+  });
+
+  const [isVertical, setIsVertical] = useState(() => {
+    return localStorage.getItem('dockOrientation') === 'vertical';
+  });
+
+  useEffect(() => {
+    localStorage.setItem('dockPosition', JSON.stringify(position));
+  }, [position]);
+
+  useEffect(() => {
+    localStorage.setItem('dockOrientation', isVertical ? 'vertical' : 'horizontal');
+  }, [isVertical]);
+
   const dockItems = useMemo(() => {
     const roleItems = allDockItems.filter(item => item.roles.includes(role));
     const minimizedItems = openWindows
@@ -47,58 +84,165 @@ export function Dock({ openWindows, onDockItemClick }: { openWindows: any[], onD
     const uniqueMinimized = minimizedItems.filter(m => !roleItems.some(r => r.path === m.path));
     return [...roleItems, ...uniqueMinimized];
   }, [role, openWindows]);
-  const handlers = useSwipeable({
-    onSwipedLeft: () => position === 'bottom' && handlePositionChange('right'),
-    onSwipedRight: () => position === 'bottom' && handlePositionChange('left'),
-    onSwipedDown: () => (position === 'left' || position === 'right') && handlePositionChange('bottom'),
-    preventScrollOnSwipe: true,
-    trackMouse: true,
-  });
-  const positionClasses = {
-    bottom: 'bottom-2 left-1/2 -translate-x-1/2 flex-row items-end',
-    left: 'left-2 top-1/2 -translate-y-1/2 flex-col items-start',
-    right: 'right-2 top-1/2 -translate-y-1/2 flex-col items-end',
+
+  const toggleOrientation = () => {
+    setIsVertical(prev => !prev);
   };
+
   return (
     <TooltipProvider>
+      {/* Invisible constraints container */}
+      <div
+        ref={constraintsRef}
+        className="fixed inset-0 pointer-events-none z-[99]"
+        style={{ top: '40px', bottom: '8px', left: '8px', right: '8px' }}
+      />
+
       <motion.div
-        {...handlers}
         drag
-        dragConstraints={{ left: 0, right: 0, top: 0, bottom: 0 }}
+        dragControls={dragControls}
+        dragMomentum={false}
         dragElastic={0.1}
-        onDragEnd={(event, info) => {
-          const { x } = info.point;
-          const { innerWidth } = window;
-          if (x < innerWidth / 4) handlePositionChange('left');
-          else if (x > (innerWidth * 3) / 4) handlePositionChange('right');
-          else handlePositionChange('bottom');
+        dragConstraints={constraintsRef}
+        onDragEnd={(_, info) => {
+          setPosition({ x: info.point.x, y: info.point.y });
         }}
-        className={cn("fixed z-[100] flex", positionClasses[position])}
+        initial={{
+          opacity: 0,
+          scale: 0.8,
+          x: position.x || 'calc(50vw - 200px)',
+          y: position.y || 'calc(100vh - 100px)'
+        }}
+        animate={{
+          opacity: 1,
+          scale: 1
+        }}
+        transition={{ type: 'spring', stiffness: 200, damping: 20 }}
+        className="fixed z-[100] cursor-grab active:cursor-grabbing"
+        style={{
+          left: position.x ? undefined : '50%',
+          bottom: position.y ? undefined : '16px',
+          transform: position.x ? undefined : 'translateX(-50%)'
+        }}
       >
         <motion.div
-          initial={{ y: 100, opacity: 0 }}
-          animate={{ y: 0, opacity: 1 }}
-          transition={{ type: 'spring', stiffness: 100, damping: 15 }}
-          className="glass-card-styles rounded-2xl p-2 flex gap-2"
-          style={{ flexDirection: position === 'bottom' ? 'row' : 'column' }}
+          className={cn(
+            "glass-card-styles rounded-2xl p-2 flex gap-1 items-center",
+            "bg-white/80 dark:bg-black/60 backdrop-blur-xl",
+            "border border-white/20 dark:border-white/10",
+            "shadow-2xl shadow-black/20"
+          )}
+          style={{ flexDirection: isVertical ? 'column' : 'row' }}
         >
+          {/* Drag handle */}
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <motion.button
+                onPointerDown={(e) => dragControls.start(e)}
+                onDoubleClick={toggleOrientation}
+                whileHover={{ scale: 1.1 }}
+                whileTap={{ scale: 0.95 }}
+                className={cn(
+                  "w-8 h-8 rounded-lg flex items-center justify-center",
+                  "bg-healthos-ice/30 dark:bg-healthos-ice/10",
+                  "hover:bg-healthos-ice/50 dark:hover:bg-healthos-ice/20",
+                  "cursor-grab active:cursor-grabbing transition-colors"
+                )}
+              >
+                <DotsSixVertical
+                  className="w-5 h-5 text-healthos-ink/50 dark:text-healthos-porcelain/50"
+                  weight="bold"
+                  style={{ transform: isVertical ? 'rotate(90deg)' : 'none' }}
+                />
+              </motion.button>
+            </TooltipTrigger>
+            <TooltipContent side={isVertical ? 'right' : 'top'}>
+              <p>Arrastar para mover / Duplo clique para girar</p>
+            </TooltipContent>
+          </Tooltip>
+
+          {/* Separator */}
+          <div className={cn(
+            "bg-healthos-ink/10 dark:bg-healthos-porcelain/10",
+            isVertical ? "w-10 h-px my-1" : "w-px h-10 mx-1"
+          )} />
+
+          {/* Dock items */}
           {dockItems.map(item => {
-            const isActive = location.pathname.startsWith(item.path) && !openWindows.find(w => w.id === item.id)?.isMinimized;
+            const isActive = location.pathname.startsWith(item.path) &&
+              !openWindows.find(w => w.id === item.id)?.isMinimized;
+            const isAI = item.id === 'ai-chatbot';
+
             return (
               <Tooltip key={item.id}>
                 <TooltipTrigger asChild>
                   <motion.button
-                    whileHover={{ scale: 1.2, y: position === 'bottom' ? -10 : 0, x: position === 'left' ? 10 : position === 'right' ? -10 : 0 }}
+                    whileHover={{
+                      scale: 1.15,
+                      y: isVertical ? 0 : -8,
+                      x: isVertical ? 8 : 0
+                    }}
                     whileTap={{ scale: 0.95 }}
                     onClick={() => onDockItemClick(item.id, item.path)}
-                    className="relative w-14 h-14 rounded-xl bg-healthos-ice/50 dark:bg-healthos-ice/10 flex items-center justify-center focus:outline-none focus:ring-2 focus:ring-healthos-prism-start"
+                    className={cn(
+                      "relative w-12 h-12 rounded-xl flex items-center justify-center",
+                      "focus:outline-none focus:ring-2 focus:ring-healthos-prism-start",
+                      "transition-colors duration-200",
+                      isAI
+                        ? "bg-gradient-to-br from-violet-500/20 to-fuchsia-500/20 dark:from-violet-500/30 dark:to-fuchsia-500/30"
+                        : "bg-healthos-ice/50 dark:bg-healthos-ice/10 hover:bg-healthos-ice/70 dark:hover:bg-healthos-ice/20"
+                    )}
                   >
-                    <item.icon className="w-8 h-8 text-healthos-ink dark:text-healthos-porcelain" weight="light" />
-                    {(isActive || item.isMinimized) && <div className="absolute bottom-0.5 h-1 w-1 rounded-full bg-healthos-ink dark:bg-healthos-porcelain" />}
-                    {item.id === 'medscribe-app' && role === 'professional' && <Badge variant="destructive" className="absolute -top-1 -right-1 h-4 w-4 p-0 flex items-center justify-center text-xs">1</Badge>}
+                    <item.icon
+                      className={cn(
+                        "w-7 h-7",
+                        isAI
+                          ? "text-violet-600 dark:text-violet-400"
+                          : "text-healthos-ink dark:text-healthos-porcelain"
+                      )}
+                      weight={isAI ? "duotone" : "light"}
+                    />
+
+                    {/* Active indicator */}
+                    {(isActive || item.isMinimized) && (
+                      <motion.div
+                        layoutId="dock-indicator"
+                        className={cn(
+                          "absolute rounded-full bg-healthos-ink dark:bg-healthos-porcelain",
+                          isVertical ? "right-0.5 w-1 h-2" : "bottom-0.5 h-1 w-2"
+                        )}
+                      />
+                    )}
+
+                    {/* Notification badge for MedScribe */}
+                    {item.id === 'medscribe-app' && role === 'professional' && (
+                      <Badge
+                        variant="destructive"
+                        className="absolute -top-1 -right-1 h-4 w-4 p-0 flex items-center justify-center text-xs"
+                      >
+                        1
+                      </Badge>
+                    )}
+
+                    {/* AI pulse effect */}
+                    {isAI && (
+                      <motion.div
+                        animate={{
+                          scale: [1, 1.2, 1],
+                          opacity: [0.5, 0, 0.5]
+                        }}
+                        transition={{
+                          duration: 2,
+                          repeat: Infinity,
+                          ease: "easeInOut"
+                        }}
+                        className="absolute inset-0 rounded-xl bg-gradient-to-br from-violet-500 to-fuchsia-500"
+                        style={{ zIndex: -1 }}
+                      />
+                    )}
                   </motion.button>
                 </TooltipTrigger>
-                <TooltipContent side={position === 'bottom' ? 'top' : position === 'left' ? 'right' : 'left'}>
+                <TooltipContent side={isVertical ? 'right' : 'top'}>
                   <p>{item.name}</p>
                 </TooltipContent>
               </Tooltip>
