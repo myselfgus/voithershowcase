@@ -57,7 +57,15 @@ class ChatService {
       return await response.json();
     } catch (error) {
       console.error('Failed to send message:', error);
-      errorReporter.report(error as Error);
+      const err = error as Error;
+      errorReporter.report({ 
+        ...err, 
+        message: err.message,
+        level: 'error', 
+        url: window.location.href, 
+        timestamp: new Date().toISOString(), 
+        userAgent: navigator.userAgent 
+      });
       return { success: false, error: 'Failed to send message' };
     }
   }
@@ -97,12 +105,29 @@ class ChatService {
         return { success: true, data: parsed };
       } catch (parseError) {
         console.error("JSON parsing error in demo:", parseError, "Raw response:", accumulatedJson);
-        errorReporter.report(new Error("MedScribe JSON parse failed"), { context: { rawResponse: accumulatedJson } });
+        const err = new Error("MedScribe JSON parse failed");
+        errorReporter.report({ 
+          message: err.message, 
+          error: err,
+          level: 'error', 
+          url: window.location.href, 
+          timestamp: new Date().toISOString(), 
+          userAgent: navigator.userAgent,
+          context: { rawResponse: accumulatedJson }
+        });
         return { success: true, data: fallbackData }; // Return fallback on parse error
       }
     } catch (error) {
       console.error("MedScribe demo failed:", error);
-      errorReporter.report(error as Error);
+      const err = error as Error;
+      errorReporter.report({ 
+        ...err, 
+        message: err.message,
+        level: 'error', 
+        url: window.location.href, 
+        timestamp: new Date().toISOString(), 
+        userAgent: navigator.userAgent 
+      });
       return { success: false, error: 'Demo failed', data: fallbackData }; // Return fallback on network/API error
     }
   }

@@ -45,3 +45,4 @@ createRoot(document.getElementById('root')!).render(
     </ErrorBoundary>
   </StrictMode>,
 );
+export { PageLoader, AnimatedOutlet };
