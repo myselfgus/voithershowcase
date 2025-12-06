@@ -8,12 +8,12 @@ import { Play, AlertTriangle, CheckCircle, Bot } from 'lucide-react';
 import { toast } from 'sonner';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 const sampleScript = `stage:
-  id: "consultation-workflow"
+  id: "consultation-flow"
 steps:
-  - trigger: "consulta_inicio"
+  - trigger: "consultation_start"
     activate: "ambient-listener"
     automation: "auto_execute"
-  - trigger: "consulta_fim"
+  - trigger: "consultation_end"
     activate: "documenter"
     automation: "require_validation"
     actions:
@@ -26,8 +26,8 @@ export function ScriptRunner() {
   const role = useCurrentRole();
   const handleRun = async () => {
     setIsLoading(true);
-    setOutput('Iniciando simulação de workflow...\n\n');
-    const prompt = `Simule a execução da regra de workflow YAML para um POV de "${role}" usando o AI Assistant "${persona}". Respeite os níveis de automação (auto_execute, require_validation). Descreva cada passo e o resultado.
+    setOutput('Iniciando execução do script...\n\n');
+    const prompt = `Simule a execução do seguinte script YAML para um POV de "${role}" usando a persona "${persona}". Respeite os níveis de automação (auto_execute, require_validation). Descreva cada passo e o resultado.
     YAML:
     ${yaml}`;
     let accumulatedResponse = '';
@@ -40,7 +40,7 @@ export function ScriptRunner() {
       }
     );
     setIsLoading(false);
-    toast.success('Simulação de workflow concluída!');
+    toast.success('Simulação de script concluída!');
   };
   const renderOutput = () => {
     return output.split('\n').map((line, index) => {
@@ -56,32 +56,32 @@ export function ScriptRunner() {
   return (
     <div className="space-y-6">
       <Card>
-        <CardHeader><CardTitle>Construtor de Regras de Workflow</CardTitle></CardHeader>
+        <CardHeader><CardTitle>Orquestrador de Scripts</CardTitle></CardHeader>
         <CardContent className="space-y-4">
           <div className="grid md:grid-cols-2 gap-4">
             <Select value={persona} onValueChange={setPersona}>
-              <SelectTrigger><SelectValue placeholder="Selecione o AI Assistant" /></SelectTrigger>
+              <SelectTrigger><SelectValue placeholder="Selecione a Persona" /></SelectTrigger>
               <SelectContent>
-                <SelectItem value="claude-sonnet">AI Assistant: Claude</SelectItem>
-                <SelectItem value="gemini-flash">AI Assistant: Gemini</SelectItem>
+                <SelectItem value="claude-sonnet">Claude Sonnet (Padrão)</SelectItem>
+                <SelectItem value="gemini-flash">Gemini Flash (Rápido)</SelectItem>
               </SelectContent>
             </Select>
             <Button onClick={handleRun} disabled={isLoading}>
               <Play className="mr-2 h-4 w-4" />
-              {isLoading ? 'Simulando...' : 'Simular Workflow'}
+              {isLoading ? 'Executando...' : 'Executar Script'}
             </Button>
           </div>
           <Textarea
             value={yaml}
             onChange={(e) => setYaml(e.target.value)}
-            placeholder="Cole o YAML da regra de workflow aqui..."
+            placeholder="Cole o YAML do script aqui..."
             rows={12}
             className="font-mono text-xs"
           />
         </CardContent>
       </Card>
       <Card>
-        <CardHeader><CardTitle className="flex items-center gap-2"><Bot /> Resultado da Simulação de Workflow</CardTitle></CardHeader>
+        <CardHeader><CardTitle className="flex items-center gap-2"><Bot /> Saída da Simulação</CardTitle></CardHeader>
         <CardContent>
           <pre className="text-sm whitespace-pre-wrap font-mono bg-muted p-4 rounded-lg min-h-[100px]">
             {isLoading && !output ? 'Aguardando resposta da IA...' : renderOutput()}

@@ -4,10 +4,12 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Skeleton } from '@/components/ui/skeleton';
+import { Badge } from '@/components/ui/badge';
 import { toast } from 'sonner';
 import { chatService } from '@/lib/chat';
 import { AccessGrantModal } from '@/components/ui/AccessGrantModal';
-import { VideoCamera, PhoneDisconnect, Sparkle } from 'lucide-react';
+import { Video, PhoneDisconnect, Sparkle, Signature } from 'lucide-react';
+import { useCurrentRole } from '@/stores/useRoleStore';
 function MockVideoFeed() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   useEffect(() => {
@@ -43,6 +45,11 @@ export function TelemedicinaStage() {
   const [inCall, setInCall] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
   const [summary, setSummary] = useState('');
+  const role = useCurrentRole();
+  useEffect(() => {
+    // Patient must always consent
+    setShowConsent(role === 'patient');
+  }, [role]);
   const handleStartCall = () => {
     setInCall(true);
     toast.info('Chamada de vídeo iniciada.');
@@ -52,7 +59,7 @@ export function TelemedicinaStage() {
     setIsProcessing(true);
     toast.info('Gerando resumo da consulta...');
     const mockTranscript = "Consulta de follow-up para hipertensão. Paciente relata boa adesão ao tratamento com Losartana 50mg. Pressão arterial aferida em casa está em média 130/85 mmHg. Sem queixas novas. Plano: Manter medicação, retornar em 3 meses.";
-    const systemPrompt = "Você é um assistente médico. Gere um resumo conciso e estruturado da consulta de telemedicina a partir da transcrição fornecida.";
+    const systemPrompt = `Você é um assistente médico. Gere um resumo conciso e estruturado da consulta de telemedicina a partir da transcrição fornecida para um POV de "${role}".`;
     let accumulatedSummary = '';
     await chatService.sendMessage(mockTranscript, 'google-ai-studio/gemini-2.5-flash', (chunk) => {
       accumulatedSummary += chunk;
@@ -78,14 +85,14 @@ export function TelemedicinaStage() {
             </AnimatePresence>
             {!inCall && (
               <div className="absolute inset-0 flex items-center justify-center">
-                <p className="text-muted-foreground">Aguardando in��cio da chamada...</p>
+                <p className="text-muted-foreground">Aguardando início da chamada...</p>
               </div>
             )}
           </div>
           <div className="flex justify-center gap-4">
             {!inCall ? (
-              <Button size="lg" onClick={handleStartCall} disabled={showConsent}>
-                <VideoCamera className="mr-2 h-5 w-5" /> Iniciar Chamada
+              <Button size="lg" onClick={handleStartCall} disabled={showConsent && role === 'patient'}>
+                <Video className="mr-2 h-5 w-5" /> Iniciar Chamada
               </Button>
             ) : (
               <Button size="lg" variant="destructive" onClick={handleEndCall}>
@@ -98,18 +105,24 @@ export function TelemedicinaStage() {
       {(isProcessing || summary) && (
         <Card>
           <CardHeader>
-            <CardTitle className="flex items-center gap-2"><Sparkle /> Resumo da IA</CardTitle>
+            <CardTitle className="flex items-center justify-between">
+              <div className="flex items-center gap-2"><Sparkle /> Resumo da IA</div>
+              <Badge variant="destructive">Assinatura Requerida</Badge>
+            </CardTitle>
           </CardHeader>
-          <CardContent>
+          <CardContent className="space-y-4">
             {isProcessing && !summary ? (
               <Skeleton className="h-32 w-full" />
             ) : (
-              <Textarea value={summary} readOnly rows={8} />
+              <Textarea value={summary} readOnly={role !== 'professional'} rows={8} />
+            )}
+            {role === 'professional' && summary && (
+              <Button><Signature className="mr-2 h-4 w-4" /> Assinar Digitalmente</Button>
             )}
           </CardContent>
         </Card>
       )}
-      <AccessGrantModal open={showConsent} onOpenChange={(open) => {
+      <AccessGrantModal open={showConsent && role === 'patient'} onOpenChange={(open) => {
         if (!open) setShowConsent(false);
       }} />
     </div>

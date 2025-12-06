@@ -51,46 +51,29 @@ export function userRoutes(app: Hono<{ Bindings: Env }>) {
     app.get('/api/actors/:type', async (c) => {
         const { type } = c.req.param();
         const controller = getAppController(c.env);
-        const stored = await controller.ctx.storage.get<Record<string, any[]>>('actors') || {};
-        const actors = stored[type] || [];
+        const actors = await controller.getActors(type);
         return c.json({ success: true, data: actors });
     });
     app.post('/api/actors/:type', async (c) => {
         const { type } = c.req.param();
         const body = await c.req.json();
         const controller = getAppController(c.env);
-        let stored = await controller.ctx.storage.get<Record<string, any[]>>('actors') || {};
-        if (!stored[type]) stored[type] = [];
-        const id = `${type}_${crypto.randomUUID()}`;
-        const newActor = { id, ...body };
-        stored[type].push(newActor);
-        await controller.ctx.storage.put('actors', stored);
+        const newActor = await controller.addActor(type, body);
         return c.json({ success: true, data: newActor }, 201);
     });
     app.put('/api/actors/:type/:id', async (c) => {
         const { type, id } = c.req.param();
         const body = await c.req.json();
         const controller = getAppController(c.env);
-        let stored = await controller.ctx.storage.get<Record<string, any[]>>('actors') || {};
-        if (!stored[type]) return c.json({ success: false, error: 'Not found' }, 404);
-        const actorIndex = stored[type].findIndex(actor => actor.id === id);
-        if (actorIndex === -1) return c.json({ success: false, error: 'Not found' }, 404);
-        const updatedActor = { ...stored[type][actorIndex], ...body };
-        stored[type][actorIndex] = updatedActor;
-        await controller.ctx.storage.put('actors', stored);
+        const updatedActor = await controller.updateActor(type, id, body);
+        if (!updatedActor) return c.json({ success: false, error: 'Not found' }, 404);
         return c.json({ success: true, data: updatedActor });
     });
     app.delete('/api/actors/:type/:id', async (c) => {
         const { type, id } = c.req.param();
         const controller = getAppController(c.env);
-        let stored = await controller.ctx.storage.get<Record<string, any[]>>('actors') || {};
-        if (!stored[type]) return c.json({ success: false, error: 'Not found' }, 404);
-        const initialLength = stored[type].length;
-        stored[type] = stored[type].filter(actor => actor.id !== id);
-        if (stored[type].length === initialLength) {
-            return c.json({ success: false, error: 'Not found' }, 404);
-        }
-        await controller.ctx.storage.put('actors', stored);
+        const success = await controller.deleteActor(type, id);
+        if (!success) return c.json({ success: false, error: 'Not found' }, 404);
         return c.json({ success: true });
     });
     // --- HEALTHOS MOCK ROUTES ---

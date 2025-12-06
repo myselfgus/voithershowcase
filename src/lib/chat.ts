@@ -27,7 +27,7 @@ export const MODELS = [
   { id: 'google-ai-studio/gemini-2.0-flash', name: 'Gemini 2.0 Flash' },
 ];
 export const medscribeSystemPrompt = `
-      Você é o MedScribe, um assistente de IA especializado em documentação médica.
+      Voc�� é o MedScribe, um assistente de IA especializado em documentação médica.
       Transcreva a seguinte consulta em uma nota SOAP (Subjetivo, Objetivo, Avaliação, Plano).
       Seja conciso, preciso e use terminologia médica apropriada.
       Formate a saída como um objeto JSON com as chaves "soapNote" e "insights".

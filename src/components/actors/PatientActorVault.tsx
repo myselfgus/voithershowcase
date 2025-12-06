@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
-import { User, ShieldCheck, Plus, Trash } from '@phosphor-icons/react';
+import { User, ShieldCheck, Plus, Trash, Clock } from '@phosphor-icons/react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -8,6 +8,7 @@ import { Label } from '@/components/ui/label';
 import { Separator } from '@/components/ui/separator';
 import { AccessGrantModal } from '@/components/ui/AccessGrantModal';
 import { toast } from 'sonner';
+import { useCurrentRole } from '@/stores/useRoleStore';
 interface PatientProfile {
   name: string;
   dob: string;
@@ -21,9 +22,10 @@ interface AccessGrant {
   expires: string;
 }
 export function PatientActorVault() {
-  const [profile, setProfile] = useState<PatientProfile | null>(null);
+  const [profile, setProfile] = useState<PatientProfile | null>({ name: 'Maria Silva', dob: '1980-05-15', id: `patient_001` });
   const [accessGrants, setAccessGrants] = useState<AccessGrant[]>([]);
   const [showAccessModal, setShowAccessModal] = useState(false);
+  const role = useCurrentRole();
   const handleCreateProfile = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     const formData = new FormData(e.currentTarget);
@@ -36,15 +38,22 @@ export function PatientActorVault() {
       });
     }
   };
-  const handleGrantAccess = () => {
-    setShowAccessModal(true);
-  };
   const handleRevokeAccess = (id: string) => {
     setAccessGrants(prev => prev.filter(grant => grant.id !== id));
     toast.info('Acesso Revogado', {
       description: 'O acesso aos seus dados foi revogado com sucesso.',
     });
   };
+  if (role !== 'patient') {
+    return (
+      <Card>
+        <CardHeader><CardTitle>Acesso Restrito</CardTitle></CardHeader>
+        <CardContent>
+          <p className="text-muted-foreground">O cofre de dados do paciente só pode ser gerenciado pelo próprio paciente. Altere seu Ponto de Vista para "Paciente" para interagir.</p>
+        </CardContent>
+      </Card>
+    );
+  }
   if (!profile) {
     return (
       <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
@@ -92,8 +101,8 @@ export function PatientActorVault() {
             <ShieldCheck size={24} />
             <CardTitle>Controle de Acesso Soberano</CardTitle>
           </div>
-          <Button onClick={handleGrantAccess}>
-            <Plus className="mr-2 h-4 w-4" /> Conceder Acesso
+          <Button onClick={() => setShowAccessModal(true)}>
+            <Plus className="mr-2 h-4 w-4" /> Simular Pedido de Acesso
           </Button>
         </CardHeader>
         <CardContent>
