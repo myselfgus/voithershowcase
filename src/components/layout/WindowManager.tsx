@@ -81,7 +81,7 @@ export function WindowManager({ openWindows, setOpenWindows }: { openWindows: (O
   const [focusOrder, setFocusOrder] = useState<string[]>([]);
   useEffect(() => {
     setFocusOrder(openWindows.map(w => w.id));
-  }, [openWindows.length]);
+  }, [openWindows]);
   const handleClose = useCallback((id: string) => {
     setOpenWindows((windows: any) => windows.filter((w: any) => w.id !== id));
     setFocusOrder(order => order.filter(fid => fid !== id));

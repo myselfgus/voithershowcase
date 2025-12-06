@@ -3,6 +3,7 @@ import { getAgentByName } from 'agents';
 import { ChatAgent } from './agent';
 import { API_RESPONSES } from './config';
 import { Env, getAppController, registerSession, unregisterSession } from "./core-utils";
+import { medscribeSystemPrompt } from "../lib/chat";
 /**
  * DO NOT MODIFY THIS FUNCTION. Only for your reference.
  */
@@ -108,8 +109,6 @@ export function userRoutes(app: Hono<{ Bindings: Env }>) {
         }
     });
     app.post('/api/transcribe', async (c) => {
-        // In a real app, you'd process the audio blob here.
-        // For this demo, we'll just use a mock transcript and stream it back.
         const agent = await getAgentByName<Env, ChatAgent>(c.env.CHAT_AGENT, 'transcriber');
         const mockTranscript = "Paciente relata dor abdominal... sinal de Murphy positivo.";
         const systemPrompt = "You are a medical transcriber. The user will provide a mock transcript. Stream it back word by word.";

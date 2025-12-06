@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Mic, StopCircle, FileText, Sparkle, Save, AlertTriangle, CheckCircle } from 'lucide-react';
+import { Mic, FileText, Sparkle, Save, AlertTriangle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Textarea } from '@/components/ui/textarea';
@@ -19,17 +19,20 @@ function MockWaveform() {
     if (!canvas) return;
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
-    const { width, height } = canvas;
-    ctx.clearRect(0, 0, width, height);
-    ctx.lineWidth = 2;
-    ctx.strokeStyle = 'hsl(var(--healthos-prism-start))';
-    ctx.beginPath();
-    const midY = height / 2;
-    for (let x = 0; x < width; x++) {
-      const y = midY + Math.sin(x * 0.05 + step * 0.001) * (midY * 0.5);
-      ctx.lineTo(x, y);
-    }
-    ctx.stroke();
+    const render = () => {
+        const { width, height } = canvas;
+        ctx.clearRect(0, 0, width, height);
+        ctx.lineWidth = 2;
+        ctx.strokeStyle = 'hsl(var(--healthos-prism-start))';
+        ctx.beginPath();
+        const midY = height / 2;
+        for (let x = 0; x < width; x++) {
+          const y = midY + Math.sin(x * 0.05 + step * 0.001) * (midY * 0.5);
+          ctx.lineTo(x, y);
+        }
+        ctx.stroke();
+    };
+    render();
   }, [step]);
   return <canvas ref={canvasRef} className="w-full h-16" />;
 }
@@ -38,22 +41,20 @@ export function MedScribeStage() {
   const [isProcessing, setIsProcessing] = useState(false);
   const [transcriptionResult, setTranscriptionResult] = useState<TranscriptionResult | null>(null);
   const [editableSoap, setEditableSoap] = useState<SoapNote | null>(null);
-  const [liveTranscript, setLiveTranscript] = useState('');
   const role = useCurrentRole();
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
+  const silenceTimer = useRef<NodeJS.Timeout | null>(null);
   const handleStopListening = useCallback(async () => {
+    if (silenceTimer.current) clearTimeout(silenceTimer.current);
     if (mediaRecorderRef.current && mediaRecorderRef.current.state === 'recording') {
-      try {
-        mediaRecorderRef.current.stop();
-      } catch (e) {
-        console.error("Error stopping media recorder:", e);
-      }
+      try { mediaRecorderRef.current.stop(); } catch (e) { console.error("Error stopping media recorder:", e); }
     }
     if (streamRef.current) {
       streamRef.current.getTracks().forEach(track => track.stop());
       streamRef.current = null;
     }
+    if (!isListening) return;
     setIsListening(false);
     setIsProcessing(true);
     toast.info("Processando consulta...", { description: "A IA está gerando o documento médico." });
@@ -66,61 +67,31 @@ export function MedScribeStage() {
       toast.error("Falha no processamento", { description: result.error });
     }
     setIsProcessing(false);
-    setLiveTranscript('');
-  }, []);
+  }, [isListening]);
   const handleStartListening = useCallback(async () => {
-    if (role !== 'professional' || isListening) return;
+    if (isListening) return;
     setTranscriptionResult(null);
     setEditableSoap(null);
-    setLiveTranscript('');
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
       streamRef.current = stream;
       mediaRecorderRef.current = new MediaRecorder(stream);
-      mediaRecorderRef.current.ondataavailable = async (event) => {
-        try {
-          if (event.data.size > 0) {
-            const reader = new FileReader();
-            reader.onloadend = async () => {
-              const base64Audio = reader.result as string;
-              // In a real app, send base64Audio to /api/transcribe
-              // For this demo, we simulate live transcription from a mock service
-              const response = await fetch('/api/transcribe', { method: 'POST', body: JSON.stringify({ audioBlob: base64Audio }) });
-              if (!response.ok || !response.body) throw new Error('Transcription failed');
-              const streamReader = response.body.getReader();
-              const decoder = new TextDecoder();
-              while (true) {
-                const { done, value } = await streamReader.read();
-                if (done) break;
-                setLiveTranscript(prev => prev + decoder.decode(value));
-              }
-            };
-            reader.readAsDataURL(event.data);
-          }
-        } catch (e) {
-          console.error('Audio processing error:', e);
-          toast.error('Erro no processamento de áudio');
-        }
+      mediaRecorderRef.current.ondataavailable = (event) => {
+        if (silenceTimer.current) clearTimeout(silenceTimer.current);
+        silenceTimer.current = setTimeout(handleStopListening, 3000); // 3s of silence
       };
-      mediaRecorderRef.current.onstop = () => {
-        try {
-          if (streamRef.current) {
-            streamRef.current.getTracks().forEach(track => track.stop());
-          }
-        } catch (e) {
-          console.error("Error stopping stream tracks:", e);
-        }
-      };
-      mediaRecorderRef.current.start(2000);
+      mediaRecorderRef.current.start(1000);
       setIsListening(true);
       toast.info("Escuta ambiente iniciada...");
     } catch (err) {
       toast.error("Microfone não disponível ou permissão negada.");
       console.error("getUserMedia error:", err);
     }
-  }, [role, isListening]);
+  }, [isListening, handleStopListening]);
   useEffect(() => {
-    // Cleanup on unmount
+    if (role === 'professional' && !isListening) {
+      handleStartListening();
+    }
     return () => {
       if (mediaRecorderRef.current && mediaRecorderRef.current.state === 'recording') {
         mediaRecorderRef.current.stop();
@@ -128,22 +99,22 @@ export function MedScribeStage() {
       if (streamRef.current) {
         streamRef.current.getTracks().forEach(track => track.stop());
       }
+      if (silenceTimer.current) clearTimeout(silenceTimer.current);
     };
-  }, []);
+  }, [role, handleStartListening, isListening]);
   const handleSoapChange = (field: keyof SoapNote, value: string) => {
     if (editableSoap) setEditableSoap({ ...editableSoap, [field]: value });
   };
   const handleSaveNote = () => {
     toast.success("Nota salva com sucesso!");
   };
-  const isReadOnly = role === 'patient';
-  if (isReadOnly) {
+  if (role === 'patient') {
     return (
-        <Card>
-            <CardHeader><CardTitle>Modo de Visualização</CardTitle></CardHeader>
-            <CardContent><p className="text-muted-foreground">Como paciente, você pode visualizar a documentação gerada, mas não pode iniciar a gravação ou editar o conteúdo.</p></CardContent>
-        </Card>
-    )
+      <Card>
+        <CardHeader><CardTitle>Modo de Visualização</CardTitle></CardHeader>
+        <CardContent><p className="text-muted-foreground">Como paciente, você pode visualizar a documentação gerada, mas não pode iniciar a gravação ou editar o conteúdo.</p></CardContent>
+      </Card>
+    );
   }
   return (
     <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="space-y-6">
@@ -153,20 +124,16 @@ export function MedScribeStage() {
             <div className="flex items-center gap-3">
               <FileText size={24} /> App MedScribe: Documentação AI
             </div>
-            {isListening && <Badge variant="outline" className="border-green-500 text-green-500 flex items-center gap-1"><CheckCircle className="h-3 w-3" /> Auto-Execute</Badge>}
           </CardTitle>
         </CardHeader>
         <CardContent className="text-center">
-          {role === 'professional' && (
-            <Button size="lg" className="rounded-full h-24 w-24" onClick={isListening ? handleStopListening : handleStartListening} disabled={isProcessing}>
-              {isListening ? <StopCircle size={48} /> : <Mic size={48} />}
-            </Button>
-          )}
-          <p className="mt-4 text-muted-foreground">
-            {isProcessing ? 'Processando...' : isListening ? 'Escuta ambiente ativa...' : 'Apenas profissionais podem iniciar a escuta.'}
-          </p>
+          <div className="text-center p-4">
+            <Mic className={`w-12 h-12 mx-auto ${isListening ? 'text-red-500 animate-pulse' : 'text-muted-foreground'}`} />
+            <p className="mt-4 text-muted-foreground">
+              {isProcessing ? 'Processando...' : isListening ? 'Escuta ambiente ativa...' : 'Aguardando microfone...'}
+            </p>
+          </div>
           {isListening && <div className="mt-4"><MockWaveform /></div>}
-          {liveTranscript && <p className="text-sm text-left mt-4 p-2 bg-muted rounded-md">{liveTranscript}<span className="animate-pulse">|</span></p>}
         </CardContent>
       </Card>
       <AnimatePresence>
@@ -184,7 +151,7 @@ export function MedScribeStage() {
                   {Object.entries(editableSoap).map(([key, value]) => (
                     <div key={key}>
                       <label className="font-semibold uppercase">{key}</label>
-                      <Textarea value={value} onChange={e => handleSoapChange(key as keyof SoapNote, e.target.value)} rows={3} readOnly={isReadOnly} />
+                      <Textarea value={value} onChange={e => handleSoapChange(key as keyof SoapNote, e.target.value)} rows={3} />
                     </div>
                   ))}
                 </CardContent>

@@ -76,14 +76,18 @@ class ChatService {
     } catch (error) {
       console.error('Failed to send message:', error);
       const err = error as Error;
-      errorReporter.report({
-        message: err.message,
-        level: 'error',
-        url: window.location.href,
-        timestamp: new Date().toISOString(),
-        userAgent: navigator.userAgent || '',
-        error: err,
-      });
+      try {
+        errorReporter.report({
+          message: err.message,
+          level: 'error',
+          url: window.location.href,
+          timestamp: new Date().toISOString(),
+          userAgent: navigator.userAgent || '',
+          error: err,
+        });
+      } catch (reportError) {
+        console.error('Failed to report error:', reportError);
+      }
       return { success: false, error: 'Failed to send message' };
     }
   }
@@ -116,28 +120,36 @@ class ChatService {
       } catch (parseError) {
         console.error("JSON parsing error in demo:", parseError, "Raw response:", accumulatedJson, "Cleaned response:", cleanJson);
         const err = parseError as Error;
-        errorReporter.report({
-          message: 'MedScribe JSON parse failed',
-          level: 'error',
-          url: window.location.href,
-          timestamp: new Date().toISOString(),
-          userAgent: navigator.userAgent || '',
-          context: { rawResponse: accumulatedJson, cleanedJson: cleanJson },
-          error: err,
-        });
+        try {
+          errorReporter.report({
+            message: 'MedScribe JSON parse failed',
+            level: 'error',
+            url: window.location.href,
+            timestamp: new Date().toISOString(),
+            userAgent: navigator.userAgent || '',
+            context: { rawResponse: accumulatedJson, cleanedJson: cleanJson },
+            error: err,
+          });
+        } catch (reportError) {
+          console.error('Failed to report error:', reportError);
+        }
         return { success: true, data: fallbackData }; // Return fallback on parse error
       }
     } catch (error) {
       console.error("MedScribe demo failed:", error);
       const err = error as Error;
-      errorReporter.report({
-        message: err.message,
-        level: 'error',
-        url: window.location.href,
-        timestamp: new Date().toISOString(),
-        userAgent: navigator.userAgent || '',
-        error: err,
-      });
+      try {
+        errorReporter.report({
+          message: err.message,
+          level: 'error',
+          url: window.location.href,
+          timestamp: new Date().toISOString(),
+          userAgent: navigator.userAgent || '',
+          error: err,
+        });
+      } catch (reportError) {
+        console.error('Failed to report error:', reportError);
+      }
       return { success: true, data: fallbackData }; // Return fallback on network/API error
     }
   }

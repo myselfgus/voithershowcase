@@ -11,6 +11,7 @@ import { useRoleStore, UserRole } from '@/stores/useRoleStore';
 import { RoleSelector } from '@/components/RoleSelector';
 import { Button } from '@/components/ui/button';
 import { Toaster } from '@/components/ui/sonner';
+import { AppLayout } from '@/components/layout/AppLayout';
 import '@/index.css';
 const Dashboard = lazy(() => import('@/pages/Dashboard').then(module => ({ default: module.Dashboard })));
 export const PageLoader = () => (
@@ -25,7 +26,6 @@ export const AnimatedOutlet = () => (
 );
 function AppInitializer({ children }: { children: React.ReactNode }) {
   const [searchParams] = useSearchParams();
-  const role = useRoleStore((state) => state.role);
   const setRole = useRoleStore((state) => state.setRole);
   const [showSelector, setShowSelector] = useState(false);
   useEffect(() => {
@@ -33,7 +33,7 @@ function AppInitializer({ children }: { children: React.ReactNode }) {
     if (initialRole && ['patient', 'professional', 'service'].includes(initialRole)) {
       setRole(initialRole as UserRole);
     } else if (!localStorage.getItem('voither-healthos-role')) {
-      // Show selector only if no role has ever been persisted
+      setRole('professional'); // Default to professional
       setShowSelector(true);
     }
   }, [searchParams, setRole]);
@@ -60,7 +60,13 @@ function AppInitializer({ children }: { children: React.ReactNode }) {
 const router = createBrowserRouter([
   {
     path: "/",
-    element: <AppInitializer><AnimatedOutlet /></AppInitializer>,
+    element: (
+      <AppInitializer>
+        <AppLayout>
+          <AnimatedOutlet />
+        </AppLayout>
+      </AppInitializer>
+    ),
     errorElement: <RouteErrorBoundary />,
     children: [
       { index: true, element: <Navigate to="/dashboard" replace /> },

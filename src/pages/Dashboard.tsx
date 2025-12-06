@@ -12,8 +12,6 @@ import { CastOverview } from './CastOverview';
 import { ScriptRunner } from '@/components/ScriptRunner';
 import { useCurrentRole } from '@/stores/useRoleStore';
 import { WindowManager, WindowProps } from '@/components/layout/WindowManager';
-import { Dock } from '@/components/layout/Dock';
-import { VoitherAppLayout } from '@/components/layout/VoitherAppLayout';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
 type WindowConfig = Omit<WindowProps, 'onClose' | 'onMinimize' | 'onFocus' | 'zIndex' | 'isMinimized' | 'children'> & {
   path: string;
@@ -64,7 +62,8 @@ export function Dashboard() {
     const path = location.pathname;
     if (path === '/dashboard' || path === '/dashboard/') {
         if (openWindows.length === 0) {
-            const defaultConfig = Object.values(windowConfig).find(wc => wc.id === 'overview');
+            const defaultConfigId = role === 'professional' ? 'medscribe-app' : 'overview';
+            const defaultConfig = Object.values(windowConfig).find(wc => wc.id === defaultConfigId);
             if (defaultConfig) {
                 openWindow(defaultConfig.id, defaultConfig.path);
             }
@@ -75,21 +74,18 @@ export function Dashboard() {
     if (config && !openWindows.some(w => w.id === config.id)) {
       openWindow(config.id, config.path);
     }
-  }, [location.pathname, openWindows, openWindow]);
+  }, [location.pathname, openWindows, openWindow, role]);
   const wrappedWindows = openWindows.map(win => ({
     ...win,
     component: (
-      <ErrorBoundary fallbackRender={() => <div className="p-4 text-center text-red-500">Ocorreu um erro neste m��dulo.</div>}>
+      <ErrorBoundary fallback={<div className="p-4 text-center text-red-500">Ocorreu um erro neste módulo.</div>}>
         {win.component}
       </ErrorBoundary>
     )
   }));
   return (
-    <VoitherAppLayout>
-      <div className="w-full h-full p-4">
-        <WindowManager openWindows={wrappedWindows} setOpenWindows={setOpenWindows} />
-      </div>
-      <Dock openWindows={openWindows} onDockItemClick={openWindow} />
-    </VoitherAppLayout>
+    <div className="w-full h-full p-4">
+      <WindowManager openWindows={wrappedWindows} setOpenWindows={setOpenWindows} />
+    </div>
   );
 }
