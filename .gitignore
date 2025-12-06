@@ -38,3 +38,4 @@ dist/
 
 # Cache
 .eslintcache
+tsconfig.tsbuildinfo
