@@ -3,7 +3,6 @@ import { getAgentByName } from 'agents';
 import { ChatAgent } from './agent';
 import { API_RESPONSES } from './config';
 import { Env, getAppController, registerSession, unregisterSession } from "./core-utils";
-import { medscribeSystemPrompt } from "../lib/chat";
 /**
  * DO NOT MODIFY THIS FUNCTION. Only for your reference.
  */

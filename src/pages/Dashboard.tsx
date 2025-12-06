@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useRef } from 'react';
+import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { PatientActorVault } from '@/components/actors/PatientActorVault';
 import { EntityActorProfile } from '@/components/actors/EntityActorProfile';
@@ -14,7 +14,8 @@ import { ScriptRunner } from '@/components/ScriptRunner';
 import { useCurrentRole } from '@/stores/useRoleStore';
 import { WindowManager, WindowProps } from '@/components/layout/WindowManager';
 import { Dock } from '@/components/layout/Dock';
-import { DesktopCanvas, useCanvasArtifacts, CanvasArtifact } from '@/components/layout/DesktopCanvas';
+import { DesktopCanvas, CanvasArtifact } from '@/components/layout/DesktopCanvas';
+import { useCanvasArtifacts } from '@/hooks/useCanvasArtifacts';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
 
 type WindowConfig = Omit<WindowProps, 'onClose' | 'onMinimize' | 'onFocus' | 'zIndex' | 'isMinimized' | 'children'> & {
@@ -49,8 +50,8 @@ export function Dashboard() {
     });
   }, [addArtifact]);
 
-  // Window configurations with AI Chatbot
-  const windowConfig: Record<string, WindowConfig> = {
+  // Window configurations with AI Chatbot - memoized to prevent unnecessary re-renders
+  const windowConfig: Record<string, WindowConfig> = useMemo(() => ({
     'overview': {
       id: 'overview',
       path: '/dashboard/overview',
@@ -140,7 +141,7 @@ export function Dashboard() {
       allowedRoles: ['professional', 'service'],
       defaultSize: { width: 500, height: 600 }
     },
-  };
+  }), [handleRenderToCanvas]);
 
   const openWindow = useCallback((id: string, path: string) => {
     const config = Object.values(windowConfig).find(wc => wc.path === path);
