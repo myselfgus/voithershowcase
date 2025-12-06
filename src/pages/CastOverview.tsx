@@ -1,35 +1,34 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
+import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Activity, Users, Layers3, AlertCircle } from 'lucide-react';
+import { useIsMobile } from '@/hooks/use-mobile';
 interface CastStatus {
   activeFlows: number;
   actorsManaged: number;
   stagesActive: number;
 }
-const COLORS = ['hsl(var(--chart-1))', 'hsl(var(--chart-2))', 'hsl(var(--chart-3))'];
 export function CastOverview() {
   const [status, setStatus] = useState<CastStatus | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const isMobile = useIsMobile();
   useEffect(() => {
     const fetchStatus = async () => {
       try {
         setLoading(true);
         setError(null);
-        // In a real app, this would be a fetch call.
-        // Simulating API call for now.
         await new Promise(resolve => setTimeout(resolve, 1000));
-        setStatus({
-          activeFlows: 7,
-          actorsManaged: 183,
-          stagesActive: 4,
-        });
+        const response = await fetch('/api/status');
+        if (!response.ok) throw new Error('Failed to fetch status');
+        const result = await response.json();
+        setStatus(result.data);
       } catch (e) {
-        setError('Failed to fetch cast status.');
+        const err = e as Error;
+        setError(err.message || 'Failed to fetch cast status.');
         console.error(e);
       } finally {
         setLoading(false);
@@ -37,11 +36,6 @@ export function CastOverview() {
     };
     fetchStatus();
   }, []);
-  const pieData = status ? [
-    { name: 'Active Flows', value: status.activeFlows },
-    { name: 'Actors Managed', value: status.actorsManaged },
-    { name: 'Stages Active', value: status.stagesActive },
-  ] : [];
   const barData = status ? [
     { name: 'Flows', value: status.activeFlows },
     { name: 'Actors', value: status.actorsManaged },
@@ -49,35 +43,37 @@ export function CastOverview() {
   ] : [];
   if (error) {
     return (
-      <Alert variant="destructive">
-        <AlertCircle className="h-4 w-4" />
-        <AlertTitle>Error</AlertTitle>
-        <AlertDescription>{error}</AlertDescription>
-      </Alert>
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 md:py-10 lg:py-12">
+        <Alert variant="destructive">
+          <AlertCircle className="h-4 w-4" />
+          <AlertTitle>Error</AlertTitle>
+          <AlertDescription>{error}</AlertDescription>
+        </Alert>
+      </div>
     );
   }
   return (
     <div className="space-y-6">
-      <motion.h1 
+      <motion.h1
         initial={{ opacity: 0, y: -20 }}
         animate={{ opacity: 1, y: 0 }}
         className="text-3xl font-bold font-display"
       >
-        Cast Overview
+        Visão Geral do Cast
       </motion.h1>
       <div className="grid gap-6 md:grid-cols-3">
         {loading ? (
           <>
-            <Skeleton className="h-32" />
-            <Skeleton className="h-32" />
-            <Skeleton className="h-32" />
+            <Skeleton className="h-24" />
+            <Skeleton className="h-24" />
+            <Skeleton className="h-24" />
           </>
         ) : status && (
           <>
             <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }}>
               <Card>
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium">Active Flows</CardTitle>
+                  <CardTitle className="text-sm font-medium">Fluxos Ativos</CardTitle>
                   <Activity className="h-4 w-4 text-muted-foreground" />
                 </CardHeader>
                 <CardContent>
@@ -88,7 +84,7 @@ export function CastOverview() {
             <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: 0.1 }}>
               <Card>
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium">Actors Managed</CardTitle>
+                  <CardTitle className="text-sm font-medium">Atores Gerenciados</CardTitle>
                   <Users className="h-4 w-4 text-muted-foreground" />
                 </CardHeader>
                 <CardContent>
@@ -99,7 +95,7 @@ export function CastOverview() {
             <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: 0.2 }}>
               <Card>
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium">Stages Active</CardTitle>
+                  <CardTitle className="text-sm font-medium">Stages Ativos</CardTitle>
                   <Layers3 className="h-4 w-4 text-muted-foreground" />
                 </CardHeader>
                 <CardContent>
@@ -113,11 +109,11 @@ export function CastOverview() {
       <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }}>
         <Card>
           <CardHeader>
-            <CardTitle>System Metrics</CardTitle>
+            <CardTitle>Métricas do Sistema</CardTitle>
           </CardHeader>
           <CardContent>
-            {loading ? <Skeleton className="h-80 w-full" /> : (
-              <ResponsiveContainer width="100%" height={300}>
+            {loading ? <Skeleton className="h-64 w-full" /> : (
+              <ResponsiveContainer width="100%" height={isMobile ? 200 : 300}>
                 <BarChart data={barData}>
                   <XAxis dataKey="name" stroke="hsl(var(--muted-foreground))" fontSize={12} />
                   <YAxis stroke="hsl(var(--muted-foreground))" fontSize={12} />

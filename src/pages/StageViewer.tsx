@@ -46,57 +46,59 @@ export function StageViewer() {
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
         transition={{ duration: 0.3 }}
-        className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 md:py-10 lg:py-12"
+        className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8"
       >
-        <SectionHeader
-          title="Visualizador de Manifestos"
-          subtitle="Inspecione as configurações declarativas de cada Stage da plataforma HealthOS."
-        />
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5, delay: 0.3 }}
-          className="max-w-4xl mx-auto"
-        >
-          <GlassCard>
-            <div className="p-6">
-              <div className="flex flex-col sm:flex-row gap-4 justify-between items-center mb-6">
-                <Select value={selectedStage} onValueChange={(value) => setSelectedStage(value as keyof typeof stageManifests)}>
-                  <SelectTrigger className="w-full sm:w-[200px]">
-                    <SelectValue placeholder="Selecione um Stage" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <motion.div
-                      initial={{ opacity: 0, height: 0 }}
-                      animate={{ opacity: 1, height: 'auto' }}
-                      transition={{ duration: 0.2 }}
-                    >
-                      {Object.keys(stageManifests).map((key) => (
-                        <SelectItem key={key} value={key} className="capitalize">
-                          {stageManifests[key as keyof typeof stageManifests].name}
-                        </SelectItem>
-                      ))}
-                    </motion.div>
-                  </SelectContent>
-                </Select>
-                <Button disabled>Editar Manifesto</Button>
-              </div>
-              <ScrollArea className="h-96 bg-healthos-ice/30 dark:bg-healthos-ice/5 rounded-lg">
-                <div className="p-4">
-                  {manifest ? (
-                    <pre className="text-sm whitespace-pre-wrap font-mono text-healthos-ink dark:text-healthos-porcelain">
-                      <code>
-                        {manifest.manifest}
-                      </code>
-                    </pre>
-                  ) : (
-                    <Skeleton className="h-96 w-full" />
-                  )}
+        <div className="py-8 md:py-10 lg:py-12">
+          <SectionHeader
+            title="Visualizador de Manifestos"
+            subtitle="Inspecione as configura��ões declarativas de cada Stage da plataforma HealthOS."
+          />
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5, delay: 0.3 }}
+            className="max-w-4xl mx-auto"
+          >
+            <GlassCard>
+              <div className="p-6">
+                <div className="flex flex-col sm:flex-row gap-4 justify-between items-center mb-6">
+                  <Select value={selectedStage} onValueChange={(value) => setSelectedStage(value as keyof typeof stageManifests)}>
+                    <SelectTrigger className="w-full sm:w-[200px]">
+                      <SelectValue placeholder="Selecione um Stage" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <motion.div
+                        initial={{ opacity: 0, y: -10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ duration: 0.2 }}
+                      >
+                        {Object.keys(stageManifests).map((key) => (
+                          <SelectItem key={key} value={key} className="capitalize">
+                            {stageManifests[key as keyof typeof stageManifests].name}
+                          </SelectItem>
+                        ))}
+                      </motion.div>
+                    </SelectContent>
+                  </Select>
+                  <Button disabled>Editar Manifesto</Button>
                 </div>
-              </ScrollArea>
-            </div>
-          </GlassCard>
-        </motion.div>
+                <ScrollArea className="h-96 bg-healthos-ice/30 dark:bg-healthos-ice/5 rounded-lg [&>div>div[data-radix-scroll-area-viewport]>style]:!bg-transparent [&>div>div>div[data-radix-scroll-area-thumb]]:!bg-healthos-ice">
+                  <div className="p-4">
+                    {!manifest ? (
+                      <Skeleton className="h-96 w-full rounded-lg" />
+                    ) : (
+                      <pre className="text-sm whitespace-pre-wrap font-mono text-healthos-ink dark:text-healthos-porcelain">
+                        <code>
+                          {manifest.manifest}
+                        </code>
+                      </pre>
+                    )}
+                  </div>
+                </ScrollArea>
+              </div>
+            </GlassCard>
+          </motion.div>
+        </div>
       </motion.div>
     </AppLayout>
   );

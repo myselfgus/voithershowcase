@@ -77,99 +77,101 @@ export function ScriptEditor() {
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
         transition={{ duration: 0.3 }}
-        className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 md:py-10 lg:py-12"
+        className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8"
       >
-        <SectionHeader
-          title="Editor de Scripts"
-          subtitle="Visualize os fluxos declarativos que definem 'como as coisas acontecem' em cada Stage."
-        />
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5, delay: 0.3 }}
-          className="grid lg:grid-cols-3 gap-8"
-        >
-          <GlassCard className="lg:col-span-1">
-            <div className="p-6">
-              <h3 className="font-bold mb-4">Scripts Disponíveis</h3>
-              <ul className="space-y-2">
-                {sampleScripts.map(script => (
-                  <li key={script.id}>
-                    <Button
-                      variant={selectedScript.id === script.id ? 'secondary' : 'ghost'}
-                      className="w-full justify-start"
-                      onClick={() => {
-                        setSelectedScript(script);
-                        setSimulationOutput('');
-                        setIsSimulating(false);
-                      }}
-                    >
-                      {script.id}
-                    </Button>
-                  </li>
-                ))}
-              </ul>
-            </div>
-          </GlassCard>
-          <div className="lg:col-span-2 space-y-8">
-            <GlassCard>
+        <div className="py-8 md:py-10 lg:py-12">
+          <SectionHeader
+            title="Editor de Scripts"
+            subtitle="Visualize os fluxos declarativos que definem 'como as coisas acontecem' em cada Stage."
+          />
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5, delay: 0.3 }}
+            className="grid lg:grid-cols-3 gap-8"
+          >
+            <GlassCard className="lg:col-span-1">
               <div className="p-6">
-                <div className="flex justify-between items-center mb-4">
-                  <h3 className="text-xl font-bold font-display">{selectedScript.id}</h3>
-                  <Button onClick={handleRunScript} disabled={isSimulating}>
-                    <Play className="mr-2 h-4 w-4" />
-                    {isSimulating ? 'Simulando...' : 'Simular Execução'}
-                  </Button>
-                </div>
-                <Suspense fallback={<Skeleton className="h-48 w-full" />}>
-                  <Accordion type="single" collapsible defaultValue="item-0">
-                    {selectedScript.steps.map((step, index) => (
-                      <AccordionItem key={index} value={`item-${index}`}>
-                        <AccordionTrigger>Passo {index + 1}: {step.trigger}</AccordionTrigger>
-                        <AccordionContent>
-                          <motion.div
-                            initial={prefersReducedMotion ? false : { opacity: 0, y: -10 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            className="bg-healthos-ice/30 dark:bg-healthos-ice/5 rounded-md p-4 font-mono text-sm"
-                          >
-                            <p><span className="text-muted-foreground">activate:</span> {step.activate}</p>
-                            {step.actions && (
-                              <div>
-                                <p className="text-muted-foreground">actions:</p>
-                                <ul className="pl-4">
-                                  {step.actions.map((action, i) => (
-                                    <li key={i}>- generate: {action.generate}</li>
-                                  ))}
-                                </ul>
-                              </div>
-                            )}
-                          </motion.div>
-                        </AccordionContent>
-                      </AccordionItem>
-                    ))}
-                  </Accordion>
-                </Suspense>
+                <h3 className="font-bold mb-4">Scripts Disponíveis</h3>
+                <ul className="space-y-2">
+                  {sampleScripts.map(script => (
+                    <li key={script.id}>
+                      <Button
+                        variant={selectedScript.id === script.id ? 'secondary' : 'ghost'}
+                        className="w-full justify-start"
+                        onClick={() => {
+                          setSelectedScript(script);
+                          setSimulationOutput('');
+                          setIsSimulating(false);
+                        }}
+                      >
+                        {script.id}
+                      </Button>
+                    </li>
+                  ))}
+                </ul>
               </div>
             </GlassCard>
-            {(simulationOutput || isSimulating) && (
-              <Card className="bg-healthos-ink text-healthos-porcelain font-mono">
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2 text-base">
-                    <Terminal />
-                    Saída da Simulação
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  {isSimulating && !simulationOutput ? (
-                    <Skeleton className="h-32 w-full bg-white/10" />
-                  ) : (
-                    <pre className="text-sm whitespace-pre-wrap">{simulationOutput}</pre>
-                  )}
-                </CardContent>
-              </Card>
-            )}
-          </div>
-        </motion.div>
+            <div className="lg:col-span-2 space-y-8">
+              <GlassCard>
+                <div className="p-6">
+                  <div className="flex justify-between items-center mb-4">
+                    <h3 className="text-xl font-bold font-display">{selectedScript.id}</h3>
+                    <Button onClick={handleRunScript} disabled={isSimulating} variant={isSimulating ? "secondary" : "default"}>
+                      <Play className="mr-2 h-4 w-4" />
+                      {isSimulating ? 'Simulando...' : 'Simular Execução'}
+                    </Button>
+                  </div>
+                  <Suspense fallback={<Skeleton className="h-48 w-full" />}>
+                    <Accordion type="single" collapsible defaultValue="item-0" className={prefersReducedMotion ? "transition-none" : ""}>
+                      {selectedScript.steps.map((step, index) => (
+                        <AccordionItem key={index} value={`item-${index}`}>
+                          <AccordionTrigger>Passo {index + 1}: {step.trigger}</AccordionTrigger>
+                          <AccordionContent>
+                            <motion.div
+                              initial={prefersReducedMotion ? false : { opacity: 0, y: -10 }}
+                              animate={{ opacity: 1, y: 0 }}
+                              className="bg-healthos-ice/30 dark:bg-healthos-ice/5 rounded-md p-4 font-mono text-sm"
+                            >
+                              <p><span className="text-muted-foreground">activate:</span> {step.activate}</p>
+                              {step.actions && (
+                                <div>
+                                  <p className="text-muted-foreground">actions:</p>
+                                  <ul className="pl-4">
+                                    {step.actions.map((action, i) => (
+                                      <li key={i}>- generate: {action.generate}</li>
+                                    ))}
+                                  </ul>
+                                </div>
+                              )}
+                            </motion.div>
+                          </AccordionContent>
+                        </AccordionItem>
+                      ))}
+                    </Accordion>
+                  </Suspense>
+                </div>
+              </GlassCard>
+              {(simulationOutput || isSimulating) && (
+                <Card className="bg-healthos-ink text-healthos-porcelain font-mono">
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2 text-base">
+                      <Terminal />
+                      Saída da Simulação
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    {isSimulating && !simulationOutput ? (
+                      <Skeleton className="h-32 w-full bg-white/10" />
+                    ) : (
+                      <pre className="text-sm whitespace-pre-wrap">{simulationOutput}</pre>
+                    )}
+                  </CardContent>
+                </Card>
+              )}
+            </div>
+          </motion.div>
+        </div>
       </motion.div>
     </AppLayout>
   );

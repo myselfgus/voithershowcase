@@ -8,7 +8,7 @@ import { Badge } from '@/components/ui/badge';
 import { toast } from 'sonner';
 import { chatService } from '@/lib/chat';
 import { AccessGrantModal } from '@/components/ui/AccessGrantModal';
-import { Video, PhoneDisconnect, Sparkle, Signature } from 'lucide-react';
+import { Video, PhoneOff, Sparkle, Signature } from 'lucide-react';
 import { useCurrentRole } from '@/stores/useRoleStore';
 function MockVideoFeed() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -41,7 +41,7 @@ function MockVideoFeed() {
   return <canvas ref={canvasRef} className="w-full h-full object-cover rounded-md" />;
 }
 export function TelemedicinaStage() {
-  const [showConsent, setShowConsent] = useState(true);
+  const [showConsent, setShowConsent] = useState(false);
   const [inCall, setInCall] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
   const [summary, setSummary] = useState('');
@@ -65,6 +65,8 @@ export function TelemedicinaStage() {
       accumulatedSummary += chunk;
       setSummary(accumulatedSummary);
     }, systemPrompt);
+    // Trigger script
+    await chatService.sendMessage(`Execute o script para "consultation_end" no POV ${role}`);
     setIsProcessing(false);
     toast.success('Resumo da consulta gerado.');
   };
@@ -96,7 +98,7 @@ export function TelemedicinaStage() {
               </Button>
             ) : (
               <Button size="lg" variant="destructive" onClick={handleEndCall}>
-                <PhoneDisconnect className="mr-2 h-5 w-5" /> Encerrar Chamada
+                <PhoneOff className="mr-2 h-5 w-5" /> Encerrar Chamada
               </Button>
             )}
           </div>
