@@ -247,7 +247,7 @@ export const generateSessionTitle = (firstUserMessage?: string): string => {
 };
 export const renderToolCall = (toolCall: ToolCall): string => {
   const result = toolCall.result as WeatherResult | MCPResult | ErrorResult | undefined;
-  if (!result) return `⚠️ ${toolCall.name}: No result`;
+  if (!result) return `⚠�� ${toolCall.name}: No result`;
   if ('error' in result) return `❌ ${toolCall.name}: ${result.error}`;
   if ('content' in result) return `🔧 ${toolCall.name}: Executed`;
   if (toolCall.name === 'get_weather') {

@@ -1,10 +1,10 @@
 import React, { useMemo, useState, useEffect } from 'react';
-import { motion, useDragControls } from 'framer-motion';
+import { motion } from 'framer-motion';
 import { PenNib, ArrowsClockwise, Calendar, Monitor, User, Stethoscope, Hospital, Wrench } from '@phosphor-icons/react';
 import { useCurrentRole } from '@/stores/useRoleStore';
 import { Badge } from '@/components/ui/badge';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
-import { useNavigate, useLocation } from 'react-router-dom';
+import { useLocation } from 'react-router-dom';
 import { useSwipeable } from 'react-swipeable';
 import { cn } from '@/lib/utils';
 type DockPosition = 'bottom' | 'left' | 'right';
@@ -24,7 +24,7 @@ export function Dock({ openWindows, onDockItemClick }: { openWindows: any[], onD
   const [position, setPosition] = useState<DockPosition>('bottom');
   useEffect(() => {
     const savedPosition = localStorage.getItem('dockPosition') as DockPosition;
-    if (savedPosition) {
+    if (savedPosition && ['bottom', 'left', 'right'].includes(savedPosition)) {
       setPosition(savedPosition);
     }
   }, []);
@@ -44,12 +44,13 @@ export function Dock({ openWindows, onDockItemClick }: { openWindows: any[], onD
           icon: baseItem?.icon || Wrench,
         };
       });
-    return [...roleItems, ...minimizedItems.filter(m => !roleItems.some(r => r.path === m.path))];
+    const uniqueMinimized = minimizedItems.filter(m => !roleItems.some(r => r.path === m.path));
+    return [...roleItems, ...uniqueMinimized];
   }, [role, openWindows]);
   const handlers = useSwipeable({
-    onSwipedLeft: () => handlePositionChange('right'),
-    onSwipedRight: () => handlePositionChange('left'),
-    onSwipedDown: () => handlePositionChange('bottom'),
+    onSwipedLeft: () => position === 'bottom' && handlePositionChange('right'),
+    onSwipedRight: () => position === 'bottom' && handlePositionChange('left'),
+    onSwipedDown: () => (position === 'left' || position === 'right') && handlePositionChange('bottom'),
     preventScrollOnSwipe: true,
     trackMouse: true,
   });
@@ -66,23 +67,23 @@ export function Dock({ openWindows, onDockItemClick }: { openWindows: any[], onD
         dragConstraints={{ left: 0, right: 0, top: 0, bottom: 0 }}
         dragElastic={0.1}
         onDragEnd={(event, info) => {
-          const { x, y } = info.point;
-          const { innerWidth, innerHeight } = window;
+          const { x } = info.point;
+          const { innerWidth } = window;
           if (x < innerWidth / 4) handlePositionChange('left');
           else if (x > (innerWidth * 3) / 4) handlePositionChange('right');
           else handlePositionChange('bottom');
         }}
-        className={cn("fixed z-50", positionClasses[position])}
+        className={cn("fixed z-[100] flex", positionClasses[position])}
       >
         <motion.div
           initial={{ y: 100, opacity: 0 }}
           animate={{ y: 0, opacity: 1 }}
           transition={{ type: 'spring', stiffness: 100, damping: 15 }}
-          className="bg-healthos-porcelain/60 dark:bg-healthos-ink/60 backdrop-blur-lg rounded-2xl p-2 shadow-2xl flex gap-2 border border-healthos-ice/50 dark:border-healthos-ice/10"
+          className="glass-card-styles rounded-2xl p-2 flex gap-2"
           style={{ flexDirection: position === 'bottom' ? 'row' : 'column' }}
         >
           {dockItems.map(item => {
-            const isActive = location.pathname.startsWith(item.path) && !item.isMinimized;
+            const isActive = location.pathname.startsWith(item.path) && !openWindows.find(w => w.id === item.id)?.isMinimized;
             return (
               <Tooltip key={item.id}>
                 <TooltipTrigger asChild>

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { PatientActorVault } from '@/components/actors/PatientActorVault';
 import { EntityActorProfile } from '@/components/actors/EntityActorProfile';
@@ -36,6 +36,7 @@ export function Dashboard() {
   const role = useCurrentRole();
   const navigate = useNavigate();
   const location = useLocation();
+  const prevRole = useRef(role);
   const openWindow = useCallback((id: string, path: string) => {
     const config = Object.values(windowConfig).find(wc => wc.path === path);
     if (!config) return;
@@ -54,43 +55,39 @@ export function Dashboard() {
     navigate(path);
   }, [navigate]);
   useEffect(() => {
-    const getDefaultPathForRole = () => {
-      switch (role) {
-        case 'patient': return '/dashboard/users/patient';
-        case 'professional': return '/dashboard/apps/medscribe';
-        case 'service': return '/dashboard/users/service';
-        default: return '/dashboard/overview';
-      }
-    };
-    const defaultPath = getDefaultPathForRole();
-    const defaultConfig = Object.values(windowConfig).find(wc => wc.path === defaultPath);
-    if (defaultConfig && openWindows.length === 0) {
-      openWindow(defaultConfig.id, defaultConfig.path);
+    if (role !== prevRole.current) {
+      setOpenWindows(current => current.filter(w => !w.allowedRoles || w.allowedRoles.includes(role)));
+      prevRole.current = role;
     }
-    setOpenWindows(current => current.filter(w => !w.allowedRoles || w.allowedRoles.includes(role)));
-  }, [role, openWindow, openWindows.length]);
+  }, [role]);
   useEffect(() => {
     const path = location.pathname;
-    if (path === '/dashboard' || path === '/dashboard/') return;
+    if (path === '/dashboard' || path === '/dashboard/') {
+        if (openWindows.length === 0) {
+            const defaultConfig = Object.values(windowConfig).find(wc => wc.id === 'overview');
+            if (defaultConfig) {
+                openWindow(defaultConfig.id, defaultConfig.path);
+            }
+        }
+        return;
+    }
     const config = Object.values(windowConfig).find(wc => wc.path === path);
     if (config && !openWindows.some(w => w.id === config.id)) {
       openWindow(config.id, config.path);
     }
-  }, [location.pathname, openWindows.length, openWindow]);
+  }, [location.pathname, openWindows, openWindow]);
   const wrappedWindows = openWindows.map(win => ({
     ...win,
     component: (
-      <ErrorBoundary fallback={<div>Error loading module.</div>}>
+      <ErrorBoundary fallbackRender={() => <div className="p-4 text-center text-red-500">Ocorreu um erro neste m��dulo.</div>}>
         {win.component}
       </ErrorBoundary>
     )
   }));
   return (
     <VoitherAppLayout>
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 md:py-10 lg:py-12 h-full">
-        <div className="w-full h-full p-4">
-          <WindowManager openWindows={wrappedWindows} setOpenWindows={setOpenWindows} />
-        </div>
+      <div className="w-full h-full p-4">
+        <WindowManager openWindows={wrappedWindows} setOpenWindows={setOpenWindows} />
       </div>
       <Dock openWindows={openWindows} onDockItemClick={openWindow} />
     </VoitherAppLayout>

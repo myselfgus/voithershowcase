@@ -99,9 +99,11 @@ export function userRoutes(app: Hono<{ Bindings: Env }>) {
         }));
         const result: any = await response.json();
         try {
-            const parsedAction = JSON.parse(result.data.messages.slice(-1)[0].content) as { action: string; params?: Record<string, any> };
+            const content = result.data.messages.slice(-1)[0].content;
+            const parsedAction = JSON.parse(content) as { action: string; params?: Record<string, any> };
             return c.json({ success: true, data: parsedAction });
         } catch (e) {
+            console.error("Failed to parse voice command:", e, "Raw content:", result?.data?.messages?.slice(-1)[0]?.content);
             return c.json({ success: false, error: 'Failed to parse command' });
         }
     });
@@ -112,7 +114,7 @@ export function userRoutes(app: Hono<{ Bindings: Env }>) {
         const mockTranscript = "Paciente relata dor abdominal... sinal de Murphy positivo.";
         const systemPrompt = "You are a medical transcriber. The user will provide a mock transcript. Stream it back word by word.";
         const url = new URL(c.req.url);
-        url.pathname = url.pathname.replace('/api/transcribe', `/api/chat/${'transcriber'}/chat`);
+        url.pathname = `/api/chat/transcriber/chat`; // Correctly form the path for the agent
         return agent.fetch(new Request(url.toString(), {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },

@@ -1,43 +1,36 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Mic, StopCircle, FileText, Sparkle, Save, Download, Signature, AlertTriangle, CheckCircle } from 'lucide-react';
+import { Mic, StopCircle, FileText, Sparkle, Save, AlertTriangle, CheckCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Textarea } from '@/components/ui/textarea';
-import { Skeleton } from '@/components/ui/skeleton';
 import { Badge } from '@/components/ui/badge';
 import { toast } from 'sonner';
 import { chatService } from '@/lib/chat';
 import { useCurrentRole } from '@/stores/useRoleStore';
+import { useRaf } from 'react-use';
 interface SoapNote { S: string; O: string; A: string; P: string; }
 interface TranscriptionResult { soapNote: SoapNote; insights: string[]; }
 function MockWaveform() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  const step = useRaf(1, 0);
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
-    let frame = 0;
-    let animationFrameId: number;
-    const render = () => {
-      frame++;
-      const { width, height } = canvas;
-      ctx.clearRect(0, 0, width, height);
-      ctx.lineWidth = 2;
-      ctx.strokeStyle = 'hsl(var(--healthos-prism-start))';
-      ctx.beginPath();
-      const midY = height / 2;
-      for (let x = 0; x < width; x++) {
-        const y = midY + Math.sin(x * 0.05 + frame * 0.1) * (midY * 0.5);
-        ctx.lineTo(x, y);
-      }
-      ctx.stroke();
-      animationFrameId = requestAnimationFrame(render);
-    };
-    render();
-    return () => cancelAnimationFrame(animationFrameId);
-  }, []);
+    const { width, height } = canvas;
+    ctx.clearRect(0, 0, width, height);
+    ctx.lineWidth = 2;
+    ctx.strokeStyle = 'hsl(var(--healthos-prism-start))';
+    ctx.beginPath();
+    const midY = height / 2;
+    for (let x = 0; x < width; x++) {
+      const y = midY + Math.sin(x * 0.05 + step * 0.001) * (midY * 0.5);
+      ctx.lineTo(x, y);
+    }
+    ctx.stroke();
+  }, [step]);
   return <canvas ref={canvasRef} className="w-full h-16" />;
 }
 export function MedScribeStage() {
@@ -51,7 +44,11 @@ export function MedScribeStage() {
   const streamRef = useRef<MediaStream | null>(null);
   const handleStopListening = useCallback(async () => {
     if (mediaRecorderRef.current && mediaRecorderRef.current.state === 'recording') {
-      mediaRecorderRef.current.stop();
+      try {
+        mediaRecorderRef.current.stop();
+      } catch (e) {
+        console.error("Error stopping media recorder:", e);
+      }
     }
     if (streamRef.current) {
       streamRef.current.getTracks().forEach(track => track.stop());
@@ -83,17 +80,22 @@ export function MedScribeStage() {
       mediaRecorderRef.current.ondataavailable = async (event) => {
         try {
           if (event.data.size > 0) {
-            // In a real scenario, you would send this blob to the backend
-            // For this demo, we simulate live transcription from a mock service
-            const response = await fetch('/api/transcribe', { method: 'POST' });
-            if (!response.ok || !response.body) throw new Error('Transcription failed');
-            const reader = response.body.getReader();
-            const decoder = new TextDecoder();
-            while (true) {
-              const { done, value } = await reader.read();
-              if (done) break;
-              setLiveTranscript(prev => prev + decoder.decode(value));
-            }
+            const reader = new FileReader();
+            reader.onloadend = async () => {
+              const base64Audio = reader.result as string;
+              // In a real app, send base64Audio to /api/transcribe
+              // For this demo, we simulate live transcription from a mock service
+              const response = await fetch('/api/transcribe', { method: 'POST', body: JSON.stringify({ audioBlob: base64Audio }) });
+              if (!response.ok || !response.body) throw new Error('Transcription failed');
+              const streamReader = response.body.getReader();
+              const decoder = new TextDecoder();
+              while (true) {
+                const { done, value } = await streamReader.read();
+                if (done) break;
+                setLiveTranscript(prev => prev + decoder.decode(value));
+              }
+            };
+            reader.readAsDataURL(event.data);
           }
         } catch (e) {
           console.error('Audio processing error:', e);
@@ -101,11 +103,15 @@ export function MedScribeStage() {
         }
       };
       mediaRecorderRef.current.onstop = () => {
-        if (streamRef.current) {
-          streamRef.current.getTracks().forEach(track => track.stop());
+        try {
+          if (streamRef.current) {
+            streamRef.current.getTracks().forEach(track => track.stop());
+          }
+        } catch (e) {
+          console.error("Error stopping stream tracks:", e);
         }
       };
-      mediaRecorderRef.current.start(2000); // Trigger data available every 2 seconds
+      mediaRecorderRef.current.start(2000);
       setIsListening(true);
       toast.info("Escuta ambiente iniciada...");
     } catch (err) {
@@ -114,9 +120,6 @@ export function MedScribeStage() {
     }
   }, [role, isListening]);
   useEffect(() => {
-    if (role === 'professional') {
-      handleStartListening();
-    }
     // Cleanup on unmount
     return () => {
       if (mediaRecorderRef.current && mediaRecorderRef.current.state === 'recording') {
@@ -126,7 +129,7 @@ export function MedScribeStage() {
         streamRef.current.getTracks().forEach(track => track.stop());
       }
     };
-  }, [role, handleStartListening]);
+  }, []);
   const handleSoapChange = (field: keyof SoapNote, value: string) => {
     if (editableSoap) setEditableSoap({ ...editableSoap, [field]: value });
   };
@@ -134,6 +137,14 @@ export function MedScribeStage() {
     toast.success("Nota salva com sucesso!");
   };
   const isReadOnly = role === 'patient';
+  if (isReadOnly) {
+    return (
+        <Card>
+            <CardHeader><CardTitle>Modo de Visualização</CardTitle></CardHeader>
+            <CardContent><p className="text-muted-foreground">Como paciente, você pode visualizar a documentação gerada, mas não pode iniciar a gravação ou editar o conteúdo.</p></CardContent>
+        </Card>
+    )
+  }
   return (
     <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="space-y-6">
       <Card>
@@ -188,8 +199,7 @@ export function MedScribeStage() {
               </Card>
             </div>
             <div className="flex justify-end items-center gap-4">
-              <Badge variant="destructive" className="flex items-center gap-1"><Signature className="h-3 w-3" /> Assinatura Requerida</Badge>
-              {role === 'professional' && <Button onClick={handleSaveNote}><Save className="mr-2 h-4 w-4" /> Salvar e Assinar</Button>}
+              <Button onClick={handleSaveNote}><Save className="mr-2 h-4 w-4" /> Salvar Nota</Button>
             </div>
           </motion.div>
         )}

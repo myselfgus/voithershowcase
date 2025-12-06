@@ -1,8 +1,7 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import { motion, AnimatePresence, useDragControls } from 'framer-motion';
-import { X, Minus, Maximize } from 'lucide-react';
 import { useCurrentRole } from '@/stores/useRoleStore';
-import { cn } from '@/lib/utils';
+import { CheckCircle, AlertTriangle, Signature } from 'lucide-react';
 export interface WindowProps {
   id: string;
   title: string;
@@ -20,14 +19,15 @@ export interface WindowProps {
 const AutomationBadge = ({ level }: { level: WindowProps['automationLevel'] }) => {
   if (!level) return null;
   const config = {
-    auto_execute: { text: 'Auto-Execute', color: 'bg-green-500' },
-    require_validation: { text: 'Validation Required', color: 'bg-yellow-500' },
-    require_signature: { text: 'Signature Required', color: 'bg-red-500' },
+    auto_execute: { text: 'Auto-Execute', Icon: CheckCircle, color: 'text-green-500' },
+    require_validation: { text: 'Validação Requerida', Icon: AlertTriangle, color: 'text-yellow-500' },
+    require_signature: { text: 'Assinatura Requerida', Icon: Signature, color: 'text-red-500' },
   };
+  const { text, Icon, color } = config[level];
   return (
-    <div className="flex items-center gap-1 text-xs text-muted-foreground">
-      <div className={`w-2 h-2 rounded-full ${config[level].color}`} />
-      {config[level].text}
+    <div className={`flex items-center gap-1 text-xs text-muted-foreground ${color}`}>
+      <Icon className="h-3 w-3" />
+      {text}
     </div>
   );
 };
@@ -35,7 +35,7 @@ function Window({ id, title, children, defaultPosition = { x: 50, y: 50 }, defau
   const role = useCurrentRole();
   const dragControls = useDragControls();
   if (allowedRoles && !allowedRoles.includes(role)) {
-    return null; // Or a restricted view
+    return null;
   }
   return (
     <AnimatePresence>
@@ -48,23 +48,23 @@ function Window({ id, title, children, defaultPosition = { x: 50, y: 50 }, defau
           initial={{ opacity: 0, scale: 0.9, x: defaultPosition.x, y: defaultPosition.y }}
           animate={{ opacity: 1, scale: 1, width: defaultSize.width, height: defaultSize.height, zIndex }}
           exit={{ opacity: 0, scale: 0.9 }}
-          transition={{ duration: 0.2, ease: 'easeInOut' }}
-          className="absolute bg-healthos-porcelain/90 dark:bg-healthos-ink/90 backdrop-blur-2xl rounded-lg shadow-2xl border border-healthos-ice/50 dark:border-healthos-ice/10 overflow-hidden flex flex-col"
+          transition={{ duration: 0.3, ease: 'easeInOut' }}
+          className="absolute glass-card-styles rounded-lg overflow-hidden flex flex-col"
           onMouseDown={() => onFocus(id)}
           onFocus={() => onFocus(id)}
           tabIndex={0}
         >
           <header
-            onPointerDown={(e) => dragControls.start(e)}
-            className="flex items-center justify-between px-3 h-9 border-b border-healthos-ice/50 dark:border-healthos-ice/10 flex-shrink-0 cursor-grab active:cursor-grabbing"
+            onPointerDown={(e) => { e.preventDefault(); dragControls.start(e); }}
+            className="flex items-center justify-between px-3 h-9 border-b flex-shrink-0 cursor-grab active:cursor-grabbing"
           >
             <div className="flex items-center gap-2">
-              <button onClick={() => onClose(id)} className="w-3 h-3 rounded-full bg-red-500 hover:bg-red-600" />
-              <button onClick={() => onMinimize(id)} className="w-3 h-3 rounded-full bg-yellow-500 hover:bg-yellow-600" />
-              <button className="w-3 h-3 rounded-full bg-green-500 hover:bg-green-600" />
+              <button onClick={() => onClose(id)} className="w-3 h-3 rounded-full bg-red-500 hover:bg-red-600 transition-colors" />
+              <button onClick={() => onMinimize(id)} className="w-3 h-3 rounded-full bg-yellow-500 hover:bg-yellow-600 transition-colors" />
+              <button className="w-3 h-3 rounded-full bg-green-500 hover:bg-green-600 transition-colors" />
             </div>
             <div className="flex flex-col items-center">
-              <span className="text-sm font-medium text-muted-foreground">{title}</span>
+              <span className="text-sm font-medium">{title}</span>
               <AutomationBadge level={automationLevel} />
             </div>
             <div className="w-16" />
@@ -78,7 +78,10 @@ function Window({ id, title, children, defaultPosition = { x: 50, y: 50 }, defau
   );
 }
 export function WindowManager({ openWindows, setOpenWindows }: { openWindows: (Omit<WindowProps, 'onClose' | 'onMinimize' | 'onFocus' | 'zIndex'> & { component: React.ReactNode })[], setOpenWindows: any }) {
-  const [focusOrder, setFocusOrder] = useState<string[]>(openWindows.map(w => w.id));
+  const [focusOrder, setFocusOrder] = useState<string[]>([]);
+  useEffect(() => {
+    setFocusOrder(openWindows.map(w => w.id));
+  }, [openWindows.length]);
   const handleClose = useCallback((id: string) => {
     setOpenWindows((windows: any) => windows.filter((w: any) => w.id !== id));
     setFocusOrder(order => order.filter(fid => fid !== id));
@@ -88,8 +91,10 @@ export function WindowManager({ openWindows, setOpenWindows }: { openWindows: (O
     setFocusOrder(order => [ ...order.filter(fid => fid !== id), id ]);
   }, [setOpenWindows]);
   const handleFocus = useCallback((id: string) => {
-    setFocusOrder(order => [ ...order.filter(fid => fid !== id), id ]);
-  }, []);
+    if (focusOrder[focusOrder.length - 1] !== id) {
+      setFocusOrder(order => [ ...order.filter(fid => fid !== id), id ]);
+    }
+  }, [focusOrder]);
   return (
     <div className="w-full h-full relative">
       {openWindows.map(window => (
