@@ -1,7 +1,7 @@
 import { Hono } from "hono";
 import { getAgentByName } from 'agents';
 import { ChatAgent } from './agent';
-import { API_RESPES } from './config';
+import { API_RESPONSES } from './config';
 import { Env, getAppController, registerSession, unregisterSession } from "./core-utils";
 /**
  * DO NOT MODIFY THIS FUNCTION. Only for your reference.
@@ -23,7 +23,7 @@ export function coreRoutes(app: Hono<{ Bindings: Env }>) {
         console.error('Agent routing error:', error);
         return c.json({
             success: false,
-            error: API_RESPES.AGENT_ROUTING_FAILED
+            error: API_RESPONSES.AGENT_ROUTING_FAILED
         }, { status: 500 });
         }
     });
@@ -97,9 +97,9 @@ export function userRoutes(app: Hono<{ Bindings: Env }>) {
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ message: prompt, stream: false, systemPrompt: 'You are a JSON-only command parser.' })
         }));
-        const result = await response.json();
+        const result: any = await response.json();
         try {
-            const parsedAction = JSON.parse(result.data.messages.slice(-1)[0].content);
+            const parsedAction = JSON.parse(result.data.messages.slice(-1)[0].content) as { action: string; params?: Record<string, any> };
             return c.json({ success: true, data: parsedAction });
         } catch (e) {
             return c.json({ success: false, error: 'Failed to parse command' });

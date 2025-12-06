@@ -50,10 +50,10 @@ export class AppController extends DurableObject<Env> {
   }
   // --- Actor Management ---
   async getActors(type: string): Promise<any[]> {
-    const stored = await this.ctx.storage.get<Record<string, any[]>>('actors') || {};
+    const stored: Record<string, any[]> = await this.ctx.storage.get('actors') || {};
     if (!stored[type]) {
       // Seed data if it doesn't exist
-      const mockData = [{ id: `${type}_001`, name: type === 'patient' ? 'Maria Silva' : 'Dr. João da Silva' }];
+      const mockData = [{ id: `${type}_001`, name: type === 'patient' ? 'Maria Silva' : type === 'entity' ? 'Dr. João da Silva' : 'Clínica Bem-Estar', specialty: 'Cardiologia', crm: '12345', address: 'Rua Fictícia, 123' }];
       stored[type] = mockData;
       await this.ctx.storage.put('actors', stored);
       return mockData;
@@ -61,7 +61,7 @@ export class AppController extends DurableObject<Env> {
     return stored[type];
   }
   async addActor(type: string, actorData: any): Promise<any> {
-    let stored = await this.ctx.storage.get<Record<string, any[]>>('actors') || {};
+    let stored: Record<string, any[]> = await this.ctx.storage.get('actors') || {};
     if (!stored[type]) stored[type] = [];
     const id = `${type}_${crypto.randomUUID()}`;
     const newActor = { id, ...actorData };
@@ -70,7 +70,7 @@ export class AppController extends DurableObject<Env> {
     return newActor;
   }
   async updateActor(type: string, id: string, actorData: any): Promise<any | null> {
-    let stored = await this.ctx.storage.get<Record<string, any[]>>('actors') || {};
+    let stored: Record<string, any[]> = await this.ctx.storage.get('actors') || {};
     if (!stored[type]) return null;
     const actorIndex = stored[type].findIndex((actor: any) => actor.id === id);
     if (actorIndex === -1) return null;
@@ -80,7 +80,7 @@ export class AppController extends DurableObject<Env> {
     return updatedActor;
   }
   async deleteActor(type: string, id: string): Promise<boolean> {
-    let stored = await this.ctx.storage.get<Record<string, any[]>>('actors') || {};
+    let stored: Record<string, any[]> = await this.ctx.storage.get('actors') || {};
     if (!stored[type]) return false;
     const initialLength = stored[type].length;
     stored[type] = stored[type].filter((actor: any) => actor.id !== id);

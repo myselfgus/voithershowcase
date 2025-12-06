@@ -14,6 +14,7 @@ import { useCurrentRole } from '@/stores/useRoleStore';
 import { WindowManager, WindowProps } from '@/components/layout/WindowManager';
 import { Dock } from '@/components/layout/Dock';
 import { VoitherAppLayout } from '@/components/layout/VoitherAppLayout';
+import { ErrorBoundary } from '@/components/ErrorBoundary';
 type WindowConfig = Omit<WindowProps, 'onClose' | 'onMinimize' | 'onFocus' | 'zIndex' | 'isMinimized' | 'children'> & {
   path: string;
   component: React.ReactNode;
@@ -46,15 +47,13 @@ export function Dashboard() {
         return updated;
       }
       if (currentWindows.length >= 5) {
-        // Limit number of open windows
-        return [ ...currentWindows.slice(1), { ...config, isMinimized: false }];
+        return [...currentWindows.slice(1), { ...config, isMinimized: false }];
       }
       return [...currentWindows, { ...config, isMinimized: false }];
     });
     navigate(path);
   }, [navigate]);
   useEffect(() => {
-    // Open default window on role change or initial load
     const getDefaultPathForRole = () => {
       switch (role) {
         case 'patient': return '/dashboard/users/patient';
@@ -68,9 +67,8 @@ export function Dashboard() {
     if (defaultConfig && openWindows.length === 0) {
       openWindow(defaultConfig.id, defaultConfig.path);
     }
-    // Close windows not allowed for the current role
     setOpenWindows(current => current.filter(w => !w.allowedRoles || w.allowedRoles.includes(role)));
-  }, [role, openWindow]);
+  }, [role, openWindow, openWindows.length]);
   useEffect(() => {
     const path = location.pathname;
     if (path === '/dashboard' || path === '/dashboard/') return;
@@ -78,11 +76,21 @@ export function Dashboard() {
     if (config && !openWindows.some(w => w.id === config.id)) {
       openWindow(config.id, config.path);
     }
-  }, [location.pathname, openWindows, openWindow]);
+  }, [location.pathname, openWindows.length, openWindow]);
+  const wrappedWindows = openWindows.map(win => ({
+    ...win,
+    component: (
+      <ErrorBoundary fallback={<div>Error loading module.</div>}>
+        {win.component}
+      </ErrorBoundary>
+    )
+  }));
   return (
     <VoitherAppLayout>
-      <div className="w-full h-full p-4">
-        <WindowManager openWindows={openWindows} setOpenWindows={setOpenWindows} />
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 md:py-10 lg:py-12 h-full">
+        <div className="w-full h-full p-4">
+          <WindowManager openWindows={wrappedWindows} setOpenWindows={setOpenWindows} />
+        </div>
       </div>
       <Dock openWindows={openWindows} onDockItemClick={openWindow} />
     </VoitherAppLayout>

@@ -48,9 +48,14 @@ export function MedScribeStage() {
   const [liveTranscript, setLiveTranscript] = useState('');
   const role = useCurrentRole();
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
+  const streamRef = useRef<MediaStream | null>(null);
   const handleStopListening = useCallback(async () => {
     if (mediaRecorderRef.current && mediaRecorderRef.current.state === 'recording') {
       mediaRecorderRef.current.stop();
+    }
+    if (streamRef.current) {
+      streamRef.current.getTracks().forEach(track => track.stop());
+      streamRef.current = null;
     }
     setIsListening(false);
     setIsProcessing(true);
@@ -67,47 +72,58 @@ export function MedScribeStage() {
     setLiveTranscript('');
   }, []);
   const handleStartListening = useCallback(async () => {
-    if (role !== 'professional') return;
+    if (role !== 'professional' || isListening) return;
     setTranscriptionResult(null);
     setEditableSoap(null);
     setLiveTranscript('');
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      streamRef.current = stream;
       mediaRecorderRef.current = new MediaRecorder(stream);
       mediaRecorderRef.current.ondataavailable = async (event) => {
-        if (event.data.size > 0) {
-          // This is where you would send the audio blob to /api/transcribe
-          // For now, we simulate live transcription
-          const mockWords = "Paciente relata dor... ".split(' ');
-          let currentWord = 0;
-          const interval = setInterval(() => {
-            if (currentWord < mockWords.length) {
-              setLiveTranscript(prev => prev + mockWords[currentWord] + ' ');
-              currentWord++;
-            } else {
-              clearInterval(interval);
+        try {
+          if (event.data.size > 0) {
+            // In a real scenario, you would send this blob to the backend
+            // For this demo, we simulate live transcription from a mock service
+            const response = await fetch('/api/transcribe', { method: 'POST' });
+            if (!response.ok || !response.body) throw new Error('Transcription failed');
+            const reader = response.body.getReader();
+            const decoder = new TextDecoder();
+            while (true) {
+              const { done, value } = await reader.read();
+              if (done) break;
+              setLiveTranscript(prev => prev + decoder.decode(value));
             }
-          }, 200);
+          }
+        } catch (e) {
+          console.error('Audio processing error:', e);
+          toast.error('Erro no processamento de áudio');
         }
       };
       mediaRecorderRef.current.onstop = () => {
-        stream.getTracks().forEach(track => track.stop());
+        if (streamRef.current) {
+          streamRef.current.getTracks().forEach(track => track.stop());
+        }
       };
-      mediaRecorderRef.current.start(1000); // Trigger data available every second
+      mediaRecorderRef.current.start(2000); // Trigger data available every 2 seconds
       setIsListening(true);
       toast.info("Escuta ambiente iniciada...");
     } catch (err) {
-      toast.error("Erro de permissão do microfone.");
-      console.error(err);
+      toast.error("Microfone não disponível ou permissão negada.");
+      console.error("getUserMedia error:", err);
     }
-  }, [role]);
+  }, [role, isListening]);
   useEffect(() => {
     if (role === 'professional') {
       handleStartListening();
     }
+    // Cleanup on unmount
     return () => {
       if (mediaRecorderRef.current && mediaRecorderRef.current.state === 'recording') {
         mediaRecorderRef.current.stop();
+      }
+      if (streamRef.current) {
+        streamRef.current.getTracks().forEach(track => track.stop());
       }
     };
   }, [role, handleStartListening]);

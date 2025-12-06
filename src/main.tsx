@@ -7,7 +7,6 @@ import { createBrowserRouter, RouterProvider, Outlet, Navigate, useSearchParams 
 import { AnimatePresence } from 'framer-motion';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
 import { RouteErrorBoundary } from '@/components/RouteErrorBoundary';
-import { VoitherAppLayout } from '@/components/layout/VoitherAppLayout';
 import { useRoleStore, UserRole } from '@/stores/useRoleStore';
 import '@/index.css';
 const HomePage = lazy(() => import('@/pages/HomePage').then(module => ({ default: module.HomePage })));
@@ -42,11 +41,7 @@ const router = createBrowserRouter([
       { index: true, element: <HomePage /> },
       {
         path: "dashboard/*",
-        element: (
-          <VoitherAppLayout>
-            <Dashboard />
-          </VoitherAppLayout>
-        ),
+        element: <Dashboard />,
       },
       { path: "*", element: <Navigate to="/" replace /> }
     ]
