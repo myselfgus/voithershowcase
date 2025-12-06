@@ -1,6 +1,5 @@
-import React, { useState } from 'react';
+import React, { useState, lazy, Suspense } from 'react';
 import { AppLayout } from '@/components/layout/AppLayout';
-import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { Button } from '@/components/ui/button';
 import { GlassCard } from '@/components/ui/GlassCard';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -8,6 +7,12 @@ import { sampleScripts } from '@/lib/mockData';
 import { motion } from 'framer-motion';
 import { Code, Play, Terminal } from '@phosphor-icons/react';
 import { toast } from 'sonner';
+import { Skeleton } from '@/components/ui/skeleton';
+import { usePrefersReducedMotion } from '@/hooks/use-prefers-reduced-motion';
+const Accordion = lazy(() => import('@/components/ui/accordion').then(module => ({ default: module.Accordion })));
+const AccordionItem = lazy(() => import('@/components/ui/accordion').then(module => ({ default: module.AccordionItem })));
+const AccordionTrigger = lazy(() => import('@/components/ui/accordion').then(module => ({ default: module.AccordionTrigger })));
+const AccordionContent = lazy(() => import('@/components/ui/accordion').then(module => ({ default: module.AccordionContent })));
 const SectionHeader: React.FC<{ title: string; subtitle: string; }> = ({ title, subtitle }) => (
   <div className="max-w-3xl mx-auto text-center mb-12 md:mb-16">
     <motion.div
@@ -39,30 +44,41 @@ const SectionHeader: React.FC<{ title: string; subtitle: string; }> = ({ title, 
 export function ScriptEditor() {
   const [selectedScript, setSelectedScript] = useState(sampleScripts[0]);
   const [simulationOutput, setSimulationOutput] = useState('');
+  const [isSimulating, setIsSimulating] = useState(false);
+  const prefersReducedMotion = usePrefersReducedMotion();
   const handleRunScript = () => {
+    setIsSimulating(true);
     setSimulationOutput('Iniciando simulação...\n');
     toast.info(`Executando script: ${selectedScript.id}`);
-    let output = '';
+    const timeouts: NodeJS.Timeout[] = [];
     selectedScript.steps.forEach((step, index) => {
-      setTimeout(() => {
-        output += `[Passo ${index + 1}] Trigger: ${step.trigger} -> Ativando: ${step.activate}\n`;
+      const timeout = setTimeout(() => {
+        let output = `[Passo ${index + 1}] Trigger: ${step.trigger} -> Ativando: ${step.activate}\n`;
         if (step.actions) {
           step.actions.forEach(action => {
             output += `  -> Ação: Gerar ${action.generate}\n`;
           });
         }
         setSimulationOutput(prev => prev + output);
-        output = ''; // Reset for next step
       }, (index + 1) * 750);
+      timeouts.push(timeout);
     });
-    setTimeout(() => {
+    const finalTimeout = setTimeout(() => {
       setSimulationOutput(prev => prev + 'Simulação concluída.');
       toast.success('Script executado com sucesso!');
+      setIsSimulating(false);
     }, (selectedScript.steps.length + 1) * 750);
+    timeouts.push(finalTimeout);
   };
   return (
-    <AppLayout container>
-      <div className="py-8 md:py-10 lg:py-12">
+    <AppLayout>
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        exit={{ opacity: 0 }}
+        transition={{ duration: 0.3 }}
+        className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 md:py-10 lg:py-12"
+      >
         <SectionHeader
           title="Editor de Scripts"
           subtitle="Visualize os fluxos declarativos que definem 'como as coisas acontecem' em cada Stage."
@@ -71,7 +87,7 @@ export function ScriptEditor() {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5, delay: 0.3 }}
-          className="grid lg:grid-cols-3 gap-8 max-w-7xl mx-auto"
+          className="grid lg:grid-cols-3 gap-8"
         >
           <GlassCard className="lg:col-span-1">
             <div className="p-6">
@@ -85,6 +101,7 @@ export function ScriptEditor() {
                       onClick={() => {
                         setSelectedScript(script);
                         setSimulationOutput('');
+                        setIsSimulating(false);
                       }}
                     >
                       {script.id}
@@ -99,36 +116,42 @@ export function ScriptEditor() {
               <div className="p-6">
                 <div className="flex justify-between items-center mb-4">
                   <h3 className="text-xl font-bold font-display">{selectedScript.id}</h3>
-                  <Button onClick={handleRunScript}>
+                  <Button onClick={handleRunScript} disabled={isSimulating}>
                     <Play className="mr-2 h-4 w-4" />
-                    Simular Execução
+                    {isSimulating ? 'Simulando...' : 'Simular Execução'}
                   </Button>
                 </div>
-                <Accordion type="single" collapsible defaultValue="item-0">
-                  {selectedScript.steps.map((step, index) => (
-                    <AccordionItem key={index} value={`item-${index}`}>
-                      <AccordionTrigger>Passo {index + 1}: {step.trigger}</AccordionTrigger>
-                      <AccordionContent>
-                        <div className="bg-healthos-ice/30 dark:bg-healthos-ice/5 rounded-md p-4 font-mono text-sm">
-                          <p><span className="text-muted-foreground">activate:</span> {step.activate}</p>
-                          {step.actions && (
-                            <div>
-                              <p className="text-muted-foreground">actions:</p>
-                              <ul className="pl-4">
-                                {step.actions.map((action, i) => (
-                                  <li key={i}>- generate: {action.generate}</li>
-                                ))}
-                              </ul>
-                            </div>
-                          )}
-                        </div>
-                      </AccordionContent>
-                    </AccordionItem>
-                  ))}
-                </Accordion>
+                <Suspense fallback={<Skeleton className="h-48 w-full" />}>
+                  <Accordion type="single" collapsible defaultValue="item-0">
+                    {selectedScript.steps.map((step, index) => (
+                      <AccordionItem key={index} value={`item-${index}`}>
+                        <AccordionTrigger>Passo {index + 1}: {step.trigger}</AccordionTrigger>
+                        <AccordionContent>
+                          <motion.div
+                            initial={prefersReducedMotion ? false : { opacity: 0, y: -10 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            className="bg-healthos-ice/30 dark:bg-healthos-ice/5 rounded-md p-4 font-mono text-sm"
+                          >
+                            <p><span className="text-muted-foreground">activate:</span> {step.activate}</p>
+                            {step.actions && (
+                              <div>
+                                <p className="text-muted-foreground">actions:</p>
+                                <ul className="pl-4">
+                                  {step.actions.map((action, i) => (
+                                    <li key={i}>- generate: {action.generate}</li>
+                                  ))}
+                                </ul>
+                              </div>
+                            )}
+                          </motion.div>
+                        </AccordionContent>
+                      </AccordionItem>
+                    ))}
+                  </Accordion>
+                </Suspense>
               </div>
             </GlassCard>
-            {simulationOutput && (
+            {(simulationOutput || isSimulating) && (
               <Card className="bg-healthos-ink text-healthos-porcelain font-mono">
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2 text-base">
@@ -137,13 +160,17 @@ export function ScriptEditor() {
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <pre className="text-sm whitespace-pre-wrap">{simulationOutput}</pre>
+                  {isSimulating && !simulationOutput ? (
+                    <Skeleton className="h-32 w-full bg-white/10" />
+                  ) : (
+                    <pre className="text-sm whitespace-pre-wrap">{simulationOutput}</pre>
+                  )}
                 </CardContent>
               </Card>
             )}
           </div>
         </motion.div>
-      </div>
+      </motion.div>
     </AppLayout>
   );
 }

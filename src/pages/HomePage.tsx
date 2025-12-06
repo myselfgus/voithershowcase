@@ -1,7 +1,7 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, lazy, Suspense } from 'react';
 import { Link } from 'react-router-dom';
 import { motion, useScroll, useTransform, AnimatePresence } from 'framer-motion';
-import { ArrowDown, PenNib, ArrowsClockwise, Calendar, Monitor, LockKey, CubeFocus, ShieldCheck, Sparkle, X } from '@phosphor-icons/react';
+import { ArrowDown, PenNib, ShieldCheck } from '@phosphor-icons/react';
 import { Toaster, toast } from '@/components/ui/sonner';
 import { ThemeToggle } from '@/components/ThemeToggle';
 import { Button } from '@/components/ui/button';
@@ -10,21 +10,28 @@ import { Separator } from '@/components/ui/separator';
 import { GlassCard } from '@/components/ui/GlassCard';
 import { NeumorphicButton } from '@/components/ui/NeumorphicButton';
 import { Skeleton } from '@/components/ui/skeleton';
-import { BreathingSphere } from '@/components/visual/BreathingSphere';
-import { ParticleFlow } from '@/components/visual/ParticleFlow';
-import { WaveformViz } from '@/components/visual/WaveformViz';
-import { CapsuleGrid } from '@/components/visual/CapsuleGrid';
 import { AccessGrantModal } from '@/components/ui/AccessGrantModal';
 import { ecosystemModules } from '@/lib/mockData';
 import { chatService } from '@/lib/chat';
 import styles from '@/styles/homepage.module.css';
 import { usePrefersReducedMotion } from '@/hooks/use-prefers-reduced-motion';
+const BreathingSphere = lazy(() => import('@/components/visual/BreathingSphere').then(module => ({ default: module.BreathingSphere })));
+const ParticleFlow = lazy(() => import('@/components/visual/ParticleFlow').then(module => ({ default: module.ParticleFlow })));
+const WaveformViz = lazy(() => import('@/components/visual/WaveformViz').then(module => ({ default: module.WaveformViz })));
+const CapsuleGrid = lazy(() => import('@/components/visual/CapsuleGrid').then(module => ({ default: module.CapsuleGrid })));
 const Section: React.FC<{ children: React.ReactNode; className?: string; id: string }> = ({ children, className, id }) => (
-  <section id={id} className={`w-full ${className}`}>
+  <motion.section
+    id={id}
+    className={`w-full ${className}`}
+    initial={{ opacity: 0, y: 20 }}
+    whileInView={{ opacity: 1, y: 0 }}
+    viewport={{ once: true, amount: 0.2 }}
+    transition={{ duration: 0.5 }}
+  >
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-24 md:py-32">
       {children}
     </div>
-  </section>
+  </motion.section>
 );
 const SectionHeader: React.FC<{ title: string; subtitle: string; label: string }> = ({ title, subtitle, label }) => (
   <div className="max-w-3xl mx-auto text-center mb-12 md:mb-16">
@@ -33,9 +40,6 @@ const SectionHeader: React.FC<{ title: string; subtitle: string; label: string }
     <p className="mt-4 text-lg text-muted-foreground">{subtitle}</p>
   </div>
 );
-const iconMap: Record<string, React.ElementType> = {
-  PenNib, ArrowsClockwise, Calendar, Monitor, LockKey, CubeFocus, ShieldCheck
-};
 interface SoapNote { S: string; O: string; A: string; P: string; }
 interface TranscriptionResult { soapNote: SoapNote; insights: string[]; }
 export function HomePage() {
@@ -59,17 +63,16 @@ export function HomePage() {
     toast.info("Iniciando demonstração do MedScribe...", {
       description: "A IA está processando a transcrição da consulta.",
     });
-    const mockAudioText = "Paciente, 45 anos, sexo masculino, relata dor abdominal intensa no quadrante superior direito há 2 dias, com irradiação para as costas. A dor piora após alimentação gordurosa. Nega febre, mas refere náuseas e um episódio de vômito. Ao exame, abdome doloroso à palpação em hipocôndrio direito, com sinal de Murphy positivo.";
-    let accumulatedJson = '';
     try {
-      await chatService.demoMedScribeTranscription(mockAudioText, (chunk) => {
-        accumulatedJson += chunk;
-      });
-      const parsed = JSON.parse(accumulatedJson);
-      setTranscription(parsed);
-      toast.success("Transcrição concluída!");
+      const result = await chatService.demoMedScribeTranscription();
+      if (result.success && result.data) {
+        setTranscription(result.data);
+        toast.success("Transcrição concluída!");
+      } else {
+        throw new Error(result.error || "Unknown error during transcription");
+      }
     } catch (error) {
-      console.error("Transcription parsing error:", error);
+      console.error("Transcription demo error:", error);
       toast.error("Falha na demonstração", { description: "Não foi possível processar a transcrição. Tente novamente." });
       setTranscription(null);
     } finally {
@@ -77,18 +80,25 @@ export function HomePage() {
     }
   };
   return (
-    <div className="bg-healthos-porcelain text-healthos-ink antialiased">
+    <motion.div
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      transition={{ duration: 0.3 }}
+      className="bg-healthos-porcelain text-healthos-ink antialiased"
+    >
       <div className={styles.heroBackground} />
       <ThemeToggle />
       <Toaster richColors closeButton />
       <AccessGrantModal open={showAccessModal} onOpenChange={setShowAccessModal} />
-      {/* Hero Section */}
       <section ref={heroRef} className="h-screen min-h-[700px] flex flex-col justify-center items-center text-center relative overflow-hidden p-4">
         <motion.div
           style={prefersReducedMotion ? {} : { scale: sphereScale, y: sphereY }}
           className="w-64 h-64 md:w-96 md:h-96 absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-0"
         >
-          <BreathingSphere />
+          <Suspense fallback={<Skeleton className="w-full h-full rounded-full" />}>
+            <BreathingSphere />
+          </Suspense>
         </motion.div>
         <div className="relative z-10">
           <motion.h1
@@ -121,7 +131,6 @@ export function HomePage() {
           <ArrowDown className="w-6 h-6 animate-bounce text-muted-foreground" />
         </motion.div>
       </section>
-      {/* MedScribe Section */}
       <Section id="medscribe" className="bg-white/50 dark:bg-black/20">
         <SectionHeader
           label="A Transformação"
@@ -130,7 +139,9 @@ export function HomePage() {
         />
         <div className="grid md:grid-cols-2 gap-8 md:gap-12 items-center">
           <div className="relative h-64 md:h-96">
-            <ParticleFlow />
+            <Suspense fallback={<Skeleton className="w-full h-full" />}>
+              <ParticleFlow />
+            </Suspense>
             <div className="absolute inset-0 flex items-center justify-center">
               <div className="w-16 h-16 bg-gradient-prism rounded-full shadow-prism-glow flex items-center justify-center">
                 <PenNib weight="fill" className="w-8 h-8 text-white" />
@@ -149,7 +160,7 @@ export function HomePage() {
               <ShieldCheck weight="fill" className="w-8 h-8 text-healthos-prism-start flex-shrink-0 mt-1" />
               <div>
                 <h3 className="font-bold text-lg">Insights Estruturados</h3>
-                <p className="text-muted-foreground">Extração de diagnósticos, medicamentos e planos em formato estruturado.</p>
+                <p className="text-muted-foreground">Extração de diagn��sticos, medicamentos e planos em formato estruturado.</p>
               </div>
             </div>
             <div className="text-center md:text-left pt-4">
@@ -203,7 +214,6 @@ export function HomePage() {
           )}
         </AnimatePresence>
       </Section>
-      {/* ASL Deep Tech Section */}
       <Section id="asl">
         <SectionHeader
           label="O Moat Tecnológico"
@@ -213,12 +223,13 @@ export function HomePage() {
         <div className="max-w-4xl mx-auto">
           <GlassCard>
             <div className="p-6 md:p-8">
-              <WaveformViz />
+              <Suspense fallback={<Skeleton className="h-24 w-full" />}>
+                <WaveformViz />
+              </Suspense>
             </div>
           </GlassCard>
         </div>
       </Section>
-      {/* Architecture Section */}
       <Section id="architecture" className="bg-white/50 dark:bg-black/20">
         <SectionHeader
           label="Soberania do Paciente"
@@ -226,10 +237,11 @@ export function HomePage() {
           subtitle="HealthOS foi desenhado com um princípio fundamental: o paciente é o único soberano de seus dados. Cada paciente é uma cápsula de dados isolada e criptografada."
         />
         <div className="max-w-4xl mx-auto">
-          <CapsuleGrid />
+          <Suspense fallback={<Skeleton className="h-64 w-full" />}>
+            <CapsuleGrid />
+          </Suspense>
         </div>
       </Section>
-      {/* Ecosystem Section */}
       <Section id="ecosystem">
         <SectionHeader
           label="O Futuro da Saúde"
@@ -260,12 +272,11 @@ export function HomePage() {
           })}
         </div>
         <div className="text-center mt-12">
-            <Button variant="outline" asChild>
+            <Button variant="outline" asChild className="transition-transform hover:scale-105">
                 <Link to="/marketplace">Explorar Marketplace de Stages</Link>
             </Button>
         </div>
       </Section>
-      {/* Footer */}
       <footer className="border-t border-healthos-ice">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
           <div className="text-center text-sm text-muted-foreground">
@@ -283,6 +294,6 @@ export function HomePage() {
           </div>
         </div>
       </footer>
-    </div>
+    </motion.div>
   );
 }

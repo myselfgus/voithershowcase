@@ -1,46 +1,47 @@
 import '@/lib/errorReporter';
 import { enableMapSet } from "immer";
 enableMapSet();
-import { StrictMode } from 'react'
-import { createRoot } from 'react-dom/client'
-import {
-  createBrowserRouter,
-  RouterProvider,
-} from "react-router-dom";
+import { StrictMode, lazy, Suspense } from 'react';
+import { createRoot } from 'react-dom/client';
+import { createBrowserRouter, RouterProvider, Outlet } from "react-router-dom";
+import { AnimatePresence } from 'framer-motion';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
 import { RouteErrorBoundary } from '@/components/RouteErrorBoundary';
-import '@/index.css'
-import { HomePage } from '@/pages/HomePage'
-import { StageViewer } from '@/pages/StageViewer';
-import { ScriptEditor } from '@/pages/ScriptEditor';
-import { Marketplace } from '@/pages/Marketplace';
+import { Skeleton } from '@/components/ui/skeleton';
+import '@/index.css';
+const HomePage = lazy(() => import('@/pages/HomePage').then(module => ({ default: module.HomePage })));
+const StageViewer = lazy(() => import('@/pages/StageViewer').then(module => ({ default: module.StageViewer })));
+const ScriptEditor = lazy(() => import('@/pages/ScriptEditor').then(module => ({ default: module.ScriptEditor })));
+const Marketplace = lazy(() => import('@/pages/Marketplace').then(module => ({ default: module.Marketplace })));
+const PageLoader = () => (
+  <div className="w-screen h-screen flex items-center justify-center">
+    <div className="w-16 h-16 border-4 border-healthos-ice border-t-healthos-prism-start rounded-full animate-spin"></div>
+  </div>
+);
+const AnimatedOutlet = () => (
+  <AnimatePresence mode="wait">
+    <Outlet />
+  </AnimatePresence>
+);
 const router = createBrowserRouter([
   {
     path: "/",
-    element: <HomePage />,
+    element: <AnimatedOutlet />,
     errorElement: <RouteErrorBoundary />,
-  },
-  {
-    path: "/stages",
-    element: <StageViewer />,
-    errorElement: <RouteErrorBoundary />,
-  },
-  {
-    path: "/scripts",
-    element: <ScriptEditor />,
-    errorElement: <RouteErrorBoundary />,
-  },
-  {
-    path: "/marketplace",
-    element: <Marketplace />,
-    errorElement: <RouteErrorBoundary />,
-  },
+    children: [
+      { index: true, element: <HomePage /> },
+      { path: "/stages", element: <StageViewer /> },
+      { path: "/scripts", element: <ScriptEditor /> },
+      { path: "/marketplace", element: <Marketplace /> },
+    ]
+  }
 ]);
-// Do not touch this code
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
     <ErrorBoundary>
-      <RouterProvider router={router} />
+      <Suspense fallback={<PageLoader />}>
+        <RouterProvider router={router} />
+      </Suspense>
     </ErrorBoundary>
   </StrictMode>,
-)
+);

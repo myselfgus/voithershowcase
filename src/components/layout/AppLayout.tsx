@@ -1,6 +1,7 @@
 import React from "react";
 import { Link, useLocation } from "react-router-dom";
-import { Home, Layers, Compass, Star, Settings, LifeBuoy, FileText, Code, Storefront } from "lucide-react";
+import { Home, FileText, Code } from "lucide-react";
+import { Storefront } from "@phosphor-icons/react";
 import {
   Sidebar,
   SidebarContent,
@@ -8,7 +9,6 @@ import {
   SidebarGroup,
   SidebarHeader,
   SidebarSeparator,
-  SidebarInput,
   SidebarGroupLabel,
   SidebarMenu,
   SidebarMenuItem,
@@ -34,7 +34,7 @@ function AppSidebar() {
           <SidebarMenu>
             <SidebarMenuItem>
               <SidebarMenuButton asChild isActive={isActive('/')}>
-                <Link to="/"><Home /> <span>Home</span></Link>
+                <Link to="/"><Home className="h-4 w-4" /> <span>Home</span></Link>
               </SidebarMenuButton>
             </SidebarMenuItem>
           </SidebarMenu>
@@ -45,17 +45,17 @@ function AppSidebar() {
           <SidebarMenu>
             <SidebarMenuItem>
               <SidebarMenuButton asChild isActive={isActive('/stages')}>
-                <Link to="/stages"><FileText /> <span>Stages</span></Link>
+                <Link to="/stages"><FileText className="h-4 w-4" /> <span>Stages</span></Link>
               </SidebarMenuButton>
             </SidebarMenuItem>
             <SidebarMenuItem>
               <SidebarMenuButton asChild isActive={isActive('/scripts')}>
-                <Link to="/scripts"><Code /> <span>Scripts</span></Link>
+                <Link to="/scripts"><Code className="h-4 w-4" /> <span>Scripts</span></Link>
               </SidebarMenuButton>
             </SidebarMenuItem>
             <SidebarMenuItem>
               <SidebarMenuButton asChild isActive={isActive('/marketplace')}>
-                <Link to="/marketplace"><Storefront /> <span>Marketplace</span></Link>
+                <Link to="/marketplace"><Storefront className="h-4 w-4" /> <span>Marketplace</span></Link>
               </SidebarMenuButton>
             </SidebarMenuItem>
           </SidebarMenu>
