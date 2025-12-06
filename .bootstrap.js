@@ -83,7 +83,8 @@ function runSetupCommands() {
     "bun add @phosphor-icons/react@^2.1.7",
     "bun add react-intersection-observer@^9.5.3",
     "bun add lru-cache@^10.4.3",
-    "bun install three @react-three/fiber @react-three/drei @phosphor-icons/react react-intersection-observer"
+    "bun install three @react-three/fiber @react-three/drei @phosphor-icons/react react-intersection-observer",
+    "bun install @react-three/fiber@8.16.8 @react-three/drei@9.108.3"
 ];
     
     if (commands.length === 0) {
