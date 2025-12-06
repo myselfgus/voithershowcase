@@ -1,11 +1,13 @@
 import type { Message, ChatState, ToolCall, WeatherResult, MCPResult, ErrorResult, SessionInfo } from '../../worker/types';
 import { errorReporter } from '@/lib/errorReporter';
-export interface ErrorReport extends Error {
+export interface ErrorReport {
+  message: string;
   level: 'info' | 'warning' | 'error';
   url: string;
   timestamp: string;
   userAgent?: string;
   context?: Record<string, unknown>;
+  error?: unknown;
 }
 export interface ChatResponse {
   success: boolean;
@@ -75,12 +77,12 @@ class ChatService {
       console.error('Failed to send message:', error);
       const err = error as Error;
       errorReporter.report({
-        ...err,
         message: err.message,
         level: 'error',
         url: window.location.href,
         timestamp: new Date().toISOString(),
-        userAgent: navigator.userAgent
+        userAgent: navigator.userAgent,
+        error: err,
       });
       return { success: false, error: 'Failed to send message' };
     }
@@ -107,23 +109,21 @@ class ChatService {
       }, medscribeSystemPrompt);
       this.switchSession(originalSessionId);
       await this.deleteSession(tempSessionId);
-      // Strip markdown fences before parsing
       const cleanJson = accumulatedJson.replace(/```json\n?|\n?```/g, '').trim();
       try {
         const parsed = JSON.parse(cleanJson);
         return { success: true, data: parsed };
       } catch (parseError) {
         console.error("JSON parsing error in demo:", parseError, "Raw response:", accumulatedJson, "Cleaned response:", cleanJson);
-        const err = new Error("MedScribe JSON parse failed");
+        const err = parseError as Error;
         errorReporter.report({
-          message: err.message,
-          name: err.name,
-          stack: err.stack,
+          message: 'MedScribe JSON parse failed',
           level: 'error',
           url: window.location.href,
           timestamp: new Date().toISOString(),
           userAgent: navigator.userAgent,
-          context: { rawResponse: accumulatedJson, cleanedJson: cleanJson }
+          context: { rawResponse: accumulatedJson, cleanedJson: cleanJson },
+          error: err,
         });
         return { success: true, data: fallbackData }; // Return fallback on parse error
       }
@@ -132,12 +132,11 @@ class ChatService {
       const err = error as Error;
       errorReporter.report({
         message: err.message,
-        name: err.name,
-        stack: err.stack,
         level: 'error',
         url: window.location.href,
         timestamp: new Date().toISOString(),
-        userAgent: navigator.userAgent
+        userAgent: navigator.userAgent,
+        error: err,
       });
       return { success: false, error: 'Demo failed', data: fallbackData }; // Return fallback on network/API error
     }

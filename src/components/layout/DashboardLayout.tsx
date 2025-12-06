@@ -1,6 +1,6 @@
 import React from "react";
 import { Link, useLocation } from "react-router-dom";
-import { Home, Users, Layers3, FileCode, Bot } from "lucide-react";
+import { Home, Users, Layers3, FileCode, Bot, LayoutDashboard } from "lucide-react";
 import {
   Sidebar,
   SidebarContent,
@@ -33,8 +33,8 @@ function AppSidebar() {
           <SidebarGroupLabel>Core</SidebarGroupLabel>
           <SidebarMenu>
             <SidebarMenuItem>
-              <SidebarMenuButton asChild isActive={location.pathname === '/dashboard'}>
-                <Link to="/dashboard"><Home className="h-4 w-4" /> <span>Dashboard</span></Link>
+              <SidebarMenuButton asChild isActive={location.pathname === '/dashboard' || location.pathname === '/dashboard/overview'}>
+                <Link to="/dashboard/overview"><LayoutDashboard className="h-4 w-4" /> <span>Overview</span></Link>
               </SidebarMenuButton>
             </SidebarMenuItem>
              <SidebarMenuItem>

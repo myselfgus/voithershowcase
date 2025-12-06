@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { Bot, Wrench, Info } from '@phosphor-icons/react';
+import { Bot, Wrench, Info } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import {
@@ -68,7 +68,7 @@ export function ToolActorList() {
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-3">
-            <Bot size={24} /> Atores de Ferramenta (MCPs)
+            <Bot className="h-6 w-6" /> Atores de Ferramenta (MCPs)
           </CardTitle>
         </CardHeader>
         <CardContent>

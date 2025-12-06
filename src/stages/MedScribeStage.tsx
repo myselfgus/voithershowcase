@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Mic, Stop, FileText, Sparkle } from '@phosphor-icons/react';
+import { Mic, Stop, FileText, Sparkle, Save } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Textarea } from '@/components/ui/textarea';
@@ -9,6 +9,37 @@ import { toast } from 'sonner';
 import { chatService } from '@/lib/chat';
 interface SoapNote { S: string; O: string; A: string; P: string; }
 interface TranscriptionResult { soapNote: SoapNote; insights: string[]; }
+function MockWaveform() {
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+    let frame = 0;
+    let animationFrameId: number;
+    const render = () => {
+      frame++;
+      const { width, height } = canvas;
+      ctx.clearRect(0, 0, width, height);
+      ctx.lineWidth = 2;
+      ctx.strokeStyle = 'hsl(var(--healthos-prism-start))';
+      ctx.beginPath();
+      const midY = height / 2;
+      for (let x = 0; x < width; x++) {
+        const y = midY + Math.sin(x * 0.05 + frame * 0.1) * (midY * 0.5);
+        ctx.lineTo(x, y);
+      }
+      ctx.stroke();
+      animationFrameId = requestAnimationFrame(render);
+    };
+    render();
+    return () => {
+      cancelAnimationFrame(animationFrameId);
+    };
+  }, []);
+  return <canvas ref={canvasRef} className="w-full h-16" />;
+}
 export function MedScribeStage() {
   const [isRecording, setIsRecording] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
@@ -16,7 +47,6 @@ export function MedScribeStage() {
   const [editableSoap, setEditableSoap] = useState<SoapNote | null>(null);
   const handleToggleRecording = async () => {
     if (isRecording) {
-      // Stop recording and process
       setIsRecording(false);
       setIsProcessing(true);
       toast.info("Processando consulta...", {
@@ -34,7 +64,6 @@ export function MedScribeStage() {
       }
       setIsProcessing(false);
     } else {
-      // Start recording
       setIsRecording(true);
       setTranscriptionResult(null);
       setEditableSoap(null);
@@ -46,6 +75,14 @@ export function MedScribeStage() {
   const handleSoapChange = (field: keyof SoapNote, value: string) => {
     if (editableSoap) {
       setEditableSoap({ ...editableSoap, [field]: value });
+    }
+  };
+  const handleSaveNote = () => {
+    if (editableSoap) {
+      localStorage.setItem('savedSoapNote', JSON.stringify(editableSoap));
+      toast.success("Nota salva com sucesso!", {
+        description: "A nota SOAP foi salva localmente."
+      });
     }
   };
   return (
@@ -73,6 +110,7 @@ export function MedScribeStage() {
           <p className="mt-4 text-muted-foreground">
             {isProcessing ? 'Processando...' : isRecording ? 'Gravando consulta...' : 'Pressione para iniciar a escuta ambiente'}
           </p>
+          {isRecording && <div className="mt-4"><MockWaveform /></div>}
         </CardContent>
       </Card>
       <AnimatePresence>
@@ -93,39 +131,47 @@ export function MedScribeStage() {
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            className="grid md:grid-cols-2 gap-6"
+            className="space-y-6"
           >
-            <Card>
-              <CardHeader><CardTitle>Nota SOAP (Editável)</CardTitle></CardHeader>
-              <CardContent className="space-y-4">
-                <div>
-                  <label className="font-semibold">Subjetivo (S)</label>
-                  <Textarea value={editableSoap.S} onChange={e => handleSoapChange('S', e.target.value)} rows={4} />
-                </div>
-                <div>
-                  <label className="font-semibold">Objetivo (O)</label>
-                  <Textarea value={editableSoap.O} onChange={e => handleSoapChange('O', e.target.value)} rows={3} />
-                </div>
-                <div>
-                  <label className="font-semibold">Avaliação (A)</label>
-                  <Textarea value={editableSoap.A} onChange={e => handleSoapChange('A', e.target.value)} rows={3} />
-                </div>
-                <div>
-                  <label className="font-semibold">Plano (P)</label>
-                  <Textarea value={editableSoap.P} onChange={e => handleSoapChange('P', e.target.value)} rows={3} />
-                </div>
-              </CardContent>
-            </Card>
-            <Card>
-              <CardHeader><CardTitle className="flex items-center gap-2"><Sparkle /> Insights da IA</CardTitle></CardHeader>
-              <CardContent>
-                <ul className="list-disc list-inside space-y-2 text-muted-foreground">
-                  {transcriptionResult.insights.map((insight, i) => (
-                    <li key={i}>{insight}</li>
-                  ))}
-                </ul>
-              </CardContent>
-            </Card>
+            <div className="grid md:grid-cols-2 gap-6">
+              <Card>
+                <CardHeader><CardTitle>Nota SOAP (Editável)</CardTitle></CardHeader>
+                <CardContent className="space-y-4">
+                  <div>
+                    <label className="font-semibold">Subjetivo (S)</label>
+                    <Textarea value={editableSoap.S} onChange={e => handleSoapChange('S', e.target.value)} rows={4} />
+                  </div>
+                  <div>
+                    <label className="font-semibold">Objetivo (O)</label>
+                    <Textarea value={editableSoap.O} onChange={e => handleSoapChange('O', e.target.value)} rows={3} />
+                  </div>
+                  <div>
+                    <label className="font-semibold">Avaliação (A)</label>
+                    <Textarea value={editableSoap.A} onChange={e => handleSoapChange('A', e.target.value)} rows={3} />
+                  </div>
+                  <div>
+                    <label className="font-semibold">Plano (P)</label>
+                    <Textarea value={editableSoap.P} onChange={e => handleSoapChange('P', e.target.value)} rows={3} />
+                  </div>
+                </CardContent>
+              </Card>
+              <Card>
+                <CardHeader><CardTitle className="flex items-center gap-2"><Sparkle /> Insights da IA</CardTitle></CardHeader>
+                <CardContent>
+                  <ul className="list-disc list-inside space-y-2 text-muted-foreground">
+                    {transcriptionResult.insights.map((insight, i) => (
+                      <li key={i}>{insight}</li>
+                    ))}
+                  </ul>
+                </CardContent>
+              </Card>
+            </div>
+            <div className="flex justify-end">
+              <Button onClick={handleSaveNote}>
+                <Save className="mr-2 h-4 w-4" />
+                Salvar Nota
+              </Button>
+            </div>
           </motion.div>
         )}
       </AnimatePresence>

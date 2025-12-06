@@ -1,7 +1,7 @@
 import React from 'react';
-import { Routes, Route, NavLink, useLocation } from 'react-router-dom';
+import { Routes, Route, NavLink, useLocation, Navigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { User, Hospital, Stethoscope, Bot, Layers3, FileCode } from '@phosphor-icons/react';
+import { User, Hospital, Stethoscope, Bot, Layers, FileCode, LayoutDashboard } from 'lucide-react';
 import { PatientActorVault } from '@/components/actors/PatientActorVault';
 import { EntityActorProfile } from '@/components/actors/EntityActorProfile';
 import { ServiceActorDashboard } from '@/components/actors/ServiceActorDashboard';
@@ -9,6 +9,9 @@ import { ToolActorList } from '@/components/actors/ToolActorList';
 import { MedScribeStage } from '@/stages/MedScribeStage';
 import { StageViewer } from './StageViewer';
 import { ScriptEditor } from './ScriptEditor';
+import { CastOverview } from './CastOverview';
+import { RegulacaoStage } from '@/components/stages/RegulacaoStage';
+import { AgendaStage } from '@/components/stages/AgendaStage';
 import { cn } from '@/lib/utils';
 const TABS = [
   { name: 'Paciente', path: '/dashboard/actors/patient', icon: User },
@@ -16,7 +19,9 @@ const TABS = [
   { name: 'Serviço', path: '/dashboard/actors/service', icon: Hospital },
 ];
 const STAGE_TABS = [
-  { name: 'MedScribe', path: '/dashboard/stages/medscribe', icon: Layers3 },
+  { name: 'MedScribe', path: '/dashboard/stages/medscribe', icon: Layers },
+  { name: 'Regulação', path: '/dashboard/stages/regulacao', icon: Layers },
+  { name: 'Agenda', path: '/dashboard/stages/agenda', icon: Layers },
   { name: 'Manifestos', path: '/dashboard/stages/viewer', icon: FileCode },
 ];
 function ActorDashboard() {
@@ -34,7 +39,7 @@ function ActorDashboard() {
               )
             }
           >
-            <tab.icon />
+            <tab.icon className="h-4 w-4" />
             {tab.name}
           </NavLink>
         ))}
@@ -43,7 +48,7 @@ function ActorDashboard() {
         <Route path="patient" element={<PatientActorVault />} />
         <Route path="entity" element={<EntityActorProfile />} />
         <Route path="service" element={<ServiceActorDashboard />} />
-        <Route index element={<PatientActorVault />} />
+        <Route index element={<Navigate to="patient" replace />} />
       </Routes>
     </div>
   );
@@ -63,24 +68,18 @@ function StageDashboard() {
               )
             }
           >
-            <tab.icon />
+            <tab.icon className="h-4 w-4" />
             {tab.name}
           </NavLink>
         ))}
       </nav>
       <Routes>
         <Route path="medscribe" element={<MedScribeStage />} />
+        <Route path="regulacao" element={<RegulacaoStage />} />
+        <Route path="agenda" element={<AgendaStage />} />
         <Route path="viewer" element={<StageViewer />} />
-        <Route index element={<MedScribeStage />} />
+        <Route index element={<Navigate to="medscribe" replace />} />
       </Routes>
-    </div>
-  );
-}
-function MainDashboard() {
-  return (
-    <div className="text-center">
-      <h1 className="text-4xl font-bold font-display">Bem-vindo ao HealthOS Cast</h1>
-      <p className="text-muted-foreground mt-2">Selecione uma opção na barra lateral para começar.</p>
     </div>
   );
 }
@@ -95,7 +94,8 @@ export function Dashboard() {
       className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 md:py-10 lg:py-12"
     >
       <Routes>
-        <Route path="/" element={<MainDashboard />} />
+        <Route path="/" element={<CastOverview />} />
+        <Route path="/overview" element={<CastOverview />} />
         <Route path="/actors/*" element={<ActorDashboard />} />
         <Route path="/stages/*" element={<StageDashboard />} />
         <Route path="/scripts" element={<ScriptEditor />} />
