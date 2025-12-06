@@ -49,11 +49,11 @@ export function ScriptEditor() {
   const handleRunScript = () => {
     setIsSimulating(true);
     setSimulationOutput('Iniciando simulação...\n');
-    toast.info(`Executando script: ${selectedScript.id}`);
+    toast.info(`Executando regra de workflow: ${selectedScript.id}`);
     const timeouts: NodeJS.Timeout[] = [];
     selectedScript.steps.forEach((step, index) => {
       const timeout = setTimeout(() => {
-        let output = `[Passo ${index + 1}] Trigger: ${step.trigger} -> Ativando: ${step.activate}\n`;
+        let output = `[Regra ${index + 1}] Trigger: ${step.trigger} -> Ativando: ${step.activate}\n`;
         if (step.actions) {
           step.actions.forEach(action => {
             output += `  -> Ação: Gerar ${action.generate}\n`;
@@ -65,7 +65,7 @@ export function ScriptEditor() {
     });
     const finalTimeout = setTimeout(() => {
       setSimulationOutput(prev => prev + 'Simulação concluída.');
-      toast.success('Script executado com sucesso!');
+      toast.success('Workflow executado com sucesso!');
       setIsSimulating(false);
     }, (selectedScript.steps.length + 1) * 750);
     timeouts.push(finalTimeout);
@@ -81,8 +81,8 @@ export function ScriptEditor() {
       >
         <div className="py-8 md:py-10 lg:py-12">
           <SectionHeader
-            title="Editor de Scripts"
-            subtitle="Visualize os fluxos declarativos que definem 'como as coisas acontecem' em cada Stage."
+            title="Editor de Regras de Workflow"
+            subtitle="Visualize os fluxos declarativos que definem 'como as coisas acontecem' em cada Módulo."
           />
           <motion.div
             initial={{ opacity: 0, y: 20 }}
@@ -92,7 +92,7 @@ export function ScriptEditor() {
           >
             <GlassCard className="lg:col-span-1">
               <div className="p-6">
-                <h3 className="font-bold mb-4">Scripts Disponíveis</h3>
+                <h3 className="font-bold mb-4">Regras Disponíveis</h3>
                 <ul className="space-y-2">
                   {sampleScripts.map(script => (
                     <li key={script.id}>
@@ -119,14 +119,14 @@ export function ScriptEditor() {
                     <h3 className="text-xl font-bold font-display">{selectedScript.id}</h3>
                     <Button onClick={handleRunScript} disabled={isSimulating} variant={isSimulating ? "secondary" : "default"}>
                       <Play className="mr-2 h-4 w-4" />
-                      {isSimulating ? 'Simulando...' : 'Simular Execução'}
+                      {isSimulating ? 'Simulando...' : 'Simular Workflow'}
                     </Button>
                   </div>
                   <Suspense fallback={<Skeleton className="h-48 w-full" />}>
                     <Accordion type="single" collapsible defaultValue="item-0" className={prefersReducedMotion ? "transition-none" : ""}>
                       {selectedScript.steps.map((step, index) => (
                         <AccordionItem key={index} value={`item-${index}`}>
-                          <AccordionTrigger>Passo {index + 1}: {step.trigger}</AccordionTrigger>
+                          <AccordionTrigger>Regra {index + 1}: {step.trigger}</AccordionTrigger>
                           <AccordionContent>
                             <motion.div
                               initial={prefersReducedMotion ? false : { opacity: 0, y: -10 }}
@@ -157,7 +157,7 @@ export function ScriptEditor() {
                   <CardHeader>
                     <CardTitle className="flex items-center gap-2 text-base">
                       <Terminal />
-                      Saída da Simulação
+                      Resultado da Workflow
                     </CardTitle>
                   </CardHeader>
                   <CardContent>

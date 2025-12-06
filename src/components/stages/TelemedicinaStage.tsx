@@ -47,34 +47,32 @@ export function TelemedicinaStage() {
   const [summary, setSummary] = useState('');
   const role = useCurrentRole();
   useEffect(() => {
-    // Patient must always consent
     setShowConsent(role === 'patient');
   }, [role]);
   const handleStartCall = () => {
     setInCall(true);
-    toast.info('Chamada de vídeo iniciada.');
+    toast.info('Chamada de telemedicina iniciada.');
   };
   const handleEndCall = async () => {
     setInCall(false);
     setIsProcessing(true);
-    toast.info('Gerando resumo da consulta...');
-    const mockTranscript = "Consulta de follow-up para hipertensão. Paciente relata boa adesão ao tratamento com Losartana 50mg. Pressão arterial aferida em casa está em média 130/85 mmHg. Sem queixas novas. Plano: Manter medicação, retornar em 3 meses.";
+    toast.info('Gerando resumo da consulta remota...');
+    const mockTranscript = "Consulta de acompanhamento para hipertensão. Paciente relata boa adesão ao tratamento com Losartana 50mg. Pressão arterial aferida em casa está em média 130/85 mmHg. Sem queixas novas. Plano: Manter medicação, retornar em 3 meses.";
     const systemPrompt = `Você é um assistente médico. Gere um resumo conciso e estruturado da consulta de telemedicina a partir da transcrição fornecida para um POV de "${role}".`;
     let accumulatedSummary = '';
     await chatService.sendMessage(mockTranscript, 'google-ai-studio/gemini-2.5-flash', (chunk) => {
       accumulatedSummary += chunk;
       setSummary(accumulatedSummary);
     }, systemPrompt);
-    // Trigger script
-    await chatService.sendMessage(`Execute o script para "consultation_end" no POV ${role}`);
+    await chatService.sendMessage(`Execute o script para "consulta_fim" no POV ${role}`);
     setIsProcessing(false);
-    toast.success('Resumo da consulta gerado.');
+    toast.success('Resumo da consulta remota gerado.');
   };
   return (
     <div className="space-y-6">
       <Card>
         <CardHeader>
-          <CardTitle>Consulta de Telemedicina</CardTitle>
+          <CardTitle>App de Telemedicina</CardTitle>
         </CardHeader>
         <CardContent>
           <div className="aspect-video bg-black rounded-lg mb-4 relative">
@@ -108,8 +106,8 @@ export function TelemedicinaStage() {
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center justify-between">
-              <div className="flex items-center gap-2"><Sparkle /> Resumo da IA</div>
-              <Badge variant="destructive">Assinatura Requerida</Badge>
+              <div className="flex items-center gap-2"><Sparkle /> Resumo AI da Consulta Remota</div>
+              <Badge variant="destructive">Assinatura Digital Requerida</Badge>
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
@@ -119,7 +117,7 @@ export function TelemedicinaStage() {
               <Textarea value={summary} readOnly={role !== 'professional'} rows={8} />
             )}
             {role === 'professional' && summary && (
-              <Button><Signature className="mr-2 h-4 w-4" /> Assinar Digitalmente</Button>
+              <Button><Signature className="mr-2 h-4 w-4" /> Assinar Digitalmente a Consulta</Button>
             )}
           </CardContent>
         </Card>

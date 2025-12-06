@@ -18,7 +18,7 @@ interface Appointment {
 export function AgendaStage() {
   const [date, setDate] = useState<Date | undefined>(new Date());
   const [time, setTime] = useState('');
-  const [service, setService] = useState('Consulta Clínica');
+  const [service, setService] = useState('Consulta de Rotina');
   const [appointments, setAppointments] = useState<Appointment[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const handleBooking = async (e: React.FormEvent) => {
@@ -29,7 +29,6 @@ export function AgendaStage() {
     }
     setIsLoading(true);
     toast.info('Verificando disponibilidade...');
-    // Mock AI check
     await new Promise(resolve => setTimeout(resolve, 1500));
     const newAppointment: Appointment = {
       id: crypto.randomUUID(),
@@ -39,7 +38,7 @@ export function AgendaStage() {
     };
     setAppointments(prev => [...prev, newAppointment].sort((a, b) => a.date.getTime() - b.date.getTime()));
     setIsLoading(false);
-    toast.success('Agendamento confirmado!');
+    toast.success('Compromisso médico confirmado!');
     setTime('');
   };
   return (
@@ -47,7 +46,7 @@ export function AgendaStage() {
       <motion.div initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} className="md:col-span-2 space-y-6">
         <Card>
           <CardHeader>
-            <CardTitle>Agendamento Inteligente</CardTitle>
+            <CardTitle>App de Agendamento Médico</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="flex justify-center">
@@ -63,7 +62,7 @@ export function AgendaStage() {
         </Card>
         <Card>
           <CardHeader>
-            <CardTitle>Detalhes do Agendamento</CardTitle>
+            <CardTitle>Detalhes do Compromisso Médico</CardTitle>
           </CardHeader>
           <CardContent>
             <form onSubmit={handleBooking} className="space-y-4">
@@ -77,10 +76,10 @@ export function AgendaStage() {
               </div>
               <div>
                 <Label htmlFor="service">Serviço</Label>
-                <Input id="service" value={service} onChange={e => setService(e.target.value)} required />
+                <Input id="service" value={service} onChange={e => setService(e.target.value)} required placeholder="Ex: Consulta de Rotina" />
               </div>
               <Button type="submit" disabled={isLoading}>
-                {isLoading ? 'Verificando...' : 'Confirmar Agendamento'}
+                {isLoading ? 'Verificando...' : 'Confirmar Compromisso Médico'}
               </Button>
             </form>
           </CardContent>
@@ -89,7 +88,7 @@ export function AgendaStage() {
       <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }}>
         <Card>
           <CardHeader>
-            <CardTitle>Próximos Agendamentos</CardTitle>
+            <CardTitle>Próximos Compromissos</CardTitle>
           </CardHeader>
           <CardContent>
             {appointments.length === 0 ? (

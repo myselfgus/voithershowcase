@@ -15,16 +15,16 @@ import { ScriptRunner } from '@/components/ScriptRunner';
 import { useCurrentRole } from '@/stores/useRoleStore';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
 const routeConfig = {
-  '/dashboard/overview': { title: 'Visão Geral do Cast', component: <CastOverview /> },
-  '/dashboard/actors/patient': { title: 'Cofre do Paciente', component: <PatientActorVault /> },
-  '/dashboard/actors/entity': { title: 'Atores de Entidade', component: <EntityActorProfile /> },
-  '/dashboard/actors/service': { title: 'Atores de Serviço', component: <ServiceActorDashboard /> },
-  '/dashboard/stages/medscribe': { title: 'Stage: MedScribe', component: <MedScribeStage /> },
-  '/dashboard/stages/regulacao': { title: 'Stage: Regulação', component: <RegulacaoStage /> },
-  '/dashboard/stages/agenda': { title: 'Stage: Agenda', component: <AgendaStage /> },
-  '/dashboard/stages/telemedicina': { title: 'Stage: Telemedicina', component: <TelemedicinaStage /> },
-  '/dashboard/scripts': { title: 'Orquestrador de Scripts', component: <ScriptRunner /> },
-  '/dashboard/tools': { title: 'Atores de Ferramenta', component: <ToolActorList /> },
+  '/dashboard/overview': { title: 'HealthOS Core Overview', component: <CastOverview /> },
+  '/dashboard/users/patient': { title: 'Patient Profile Manager', component: <PatientActorVault /> },
+  '/dashboard/users/professional': { title: 'Professional User Profiles', component: <EntityActorProfile /> },
+  '/dashboard/users/service': { title: 'Service Unit Dashboard', component: <ServiceActorDashboard /> },
+  '/dashboard/apps/medscribe': { title: 'MedScribe App', component: <MedScribeStage /> },
+  '/dashboard/apps/regulacao': { title: 'Regulation Center', component: <RegulacaoStage /> },
+  '/dashboard/apps/agenda': { title: 'Agenda App', component: <AgendaStage /> },
+  '/dashboard/apps/telemedicina': { title: 'Telemedicina App', component: <TelemedicinaStage /> },
+  '/dashboard/rules': { title: 'Workflow Rules Builder', component: <ScriptRunner /> },
+  '/dashboard/tools': { title: 'Health Tools', component: <ToolActorList /> },
 };
 export function Dashboard() {
   const location = useLocation();
@@ -34,29 +34,31 @@ export function Dashboard() {
   const getDefaultPathForRole = () => {
     if (!role) return '/dashboard/overview';
     switch (role) {
-      case 'patient': return '/dashboard/actors/patient';
-      case 'professional': return '/dashboard/stages/medscribe';
-      case 'service': return '/dashboard/overview';
+      case 'patient': return '/dashboard/users/patient';
+      case 'professional': return '/dashboard/apps/medscribe';
+      case 'service': return '/dashboard/users/service';
       default: return '/dashboard/overview';
     }
   };
   return (
     <WindowContainer title={title}>
-      <ErrorBoundary>
-        <Routes>
-          <Route path="/" element={<Navigate to={getDefaultPathForRole()} replace />} />
-          <Route path="/overview" element={<CastOverview />} />
-          <Route path="/actors/patient" element={<PatientActorVault />} />
-          <Route path="/actors/entity" element={<EntityActorProfile />} />
-          <Route path="/actors/service" element={<ServiceActorDashboard />} />
-          <Route path="/stages/medscribe" element={<MedScribeStage />} />
-          <Route path="/stages/regulacao" element={<RegulacaoStage />} />
-          <Route path="/stages/agenda" element={<AgendaStage />} />
-          <Route path="/stages/telemedicina" element={<TelemedicinaStage />} />
-          <Route path="/scripts" element={<ScriptRunner />} />
-          <Route path="/tools" element={<ToolActorList />} />
-        </Routes>
-      </ErrorBoundary>
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 md:py-10 lg:py-12 h-full">
+        <ErrorBoundary>
+          <Routes>
+            <Route path="/" element={<Navigate to={getDefaultPathForRole()} replace />} />
+            <Route path="/overview" element={<CastOverview />} />
+            <Route path="/users/patient" element={<PatientActorVault />} />
+            <Route path="/users/professional" element={<EntityActorProfile />} />
+            <Route path="/users/service" element={<ServiceActorDashboard />} />
+            <Route path="/apps/medscribe" element={<MedScribeStage />} />
+            <Route path="/apps/regulacao" element={<RegulacaoStage />} />
+            <Route path="/apps/agenda" element={<AgendaStage />} />
+            <Route path="/apps/telemedicina" element={<TelemedicinaStage />} />
+            <Route path="/rules" element={<ScriptRunner />} />
+            <Route path="/tools" element={<ToolActorList />} />
+          </Routes>
+        </ErrorBoundary>
+      </div>
     </WindowContainer>
   );
 }

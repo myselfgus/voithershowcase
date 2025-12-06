@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
-import { User, ShieldCheck, Plus, Trash, Clock } from '@phosphor-icons/react';
+import { User, ShieldCheck, Plus, Trash } from '@phosphor-icons/react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -9,6 +9,7 @@ import { Separator } from '@/components/ui/separator';
 import { AccessGrantModal } from '@/components/ui/AccessGrantModal';
 import { toast } from 'sonner';
 import { useCurrentRole } from '@/stores/useRoleStore';
+import { Badge } from '@/components/ui/badge';
 interface PatientProfile {
   name: string;
   dob: string;
@@ -40,7 +41,7 @@ export function PatientActorVault() {
   };
   const handleRevokeAccess = (id: string) => {
     setAccessGrants(prev => prev.filter(grant => grant.id !== id));
-    toast.info('Acesso Revogado', {
+    toast.info('Acesso aos Dados Revogado', {
       description: 'O acesso aos seus dados foi revogado com sucesso.',
     });
   };
@@ -49,7 +50,7 @@ export function PatientActorVault() {
       <Card>
         <CardHeader><CardTitle>Acesso Restrito</CardTitle></CardHeader>
         <CardContent>
-          <p className="text-muted-foreground">O cofre de dados do paciente só pode ser gerenciado pelo próprio paciente. Altere seu Ponto de Vista para "Paciente" para interagir.</p>
+          <p className="text-muted-foreground">O gerenciador de perfil do paciente só pode ser acessado pelo próprio paciente. Altere seu Ponto de Vista para "Paciente" para interagir.</p>
         </CardContent>
       </Card>
     );
@@ -59,7 +60,7 @@ export function PatientActorVault() {
       <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
         <Card>
           <CardHeader>
-            <CardTitle>Criar Cofre de Dados do Paciente</CardTitle>
+            <CardTitle>Criar Perfil do Paciente</CardTitle>
           </CardHeader>
           <CardContent>
             <form onSubmit={handleCreateProfile} className="space-y-4">
@@ -84,14 +85,15 @@ export function PatientActorVault() {
         <CardHeader className="flex flex-row items-center justify-between">
           <div className="flex items-center gap-3">
             <User size={24} />
-            <CardTitle>{profile.name}</CardTitle>
+            <CardTitle>Perfil do Paciente</CardTitle>
           </div>
           <Button variant="destructive" size="sm" onClick={() => setProfile(null)}>
-            Excluir Cofre
+            Excluir Perfil
           </Button>
         </CardHeader>
         <CardContent>
-          <p className="text-sm text-muted-foreground">ID do Ator: {profile.id}</p>
+          <p className="font-semibold">{profile.name}</p>
+          <p className="text-sm text-muted-foreground">ID do Perfil: {profile.id}</p>
           <p className="text-sm text-muted-foreground">Data de Nascimento: {profile.dob}</p>
         </CardContent>
       </Card>
@@ -99,7 +101,7 @@ export function PatientActorVault() {
         <CardHeader className="flex flex-row items-center justify-between">
           <div className="flex items-center gap-3">
             <ShieldCheck size={24} />
-            <CardTitle>Controle de Acesso Soberano</CardTitle>
+            <CardTitle>Gerenciar Acesso aos Dados</CardTitle>
           </div>
           <Button onClick={() => setShowAccessModal(true)}>
             <Plus className="mr-2 h-4 w-4" /> Simular Pedido de Acesso
@@ -114,11 +116,11 @@ export function PatientActorVault() {
                 <React.Fragment key={grant.id}>
                   <div className="flex items-center justify-between">
                     <div>
-                      <p className="font-semibold">{grant.entityName} via {grant.serviceName}</p>
+                      <p className="font-semibold">Profissional: {grant.entityName} via {grant.serviceName}</p>
                       <p className="text-xs text-muted-foreground">Escopo: {grant.scope} | Expira: {grant.expires}</p>
                     </div>
                     <Button variant="outline" size="sm" onClick={() => handleRevokeAccess(grant.id)}>
-                      <Trash className="mr-2 h-4 w-4" /> Revogar
+                      <Trash className="mr-2 h-4 w-4" /> Revogar Acesso
                     </Button>
                   </div>
                   {index < accessGrants.length - 1 && <Separator />}

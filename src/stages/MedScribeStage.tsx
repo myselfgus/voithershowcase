@@ -53,13 +53,13 @@ export function MedScribeStage() {
       setIsRecording(false);
       setIsProcessing(true);
       toast.info("Processando consulta...", {
-        description: "A IA está gerando a nota SOAP e insights.",
+        description: "A IA está gerando o documento médico e insights.",
       });
       const result = await chatService.demoMedScribeTranscription();
       if (result.success && result.data) {
         setTranscriptionResult(result.data);
         setEditableSoap(result.data.soapNote);
-        toast.success("Processamento concluído!");
+        toast.success("Processamento do App concluído!");
       } else {
         toast.error("Falha no processamento", {
           description: result.error || "Não foi possível gerar a documentação.",
@@ -106,7 +106,8 @@ export function MedScribeStage() {
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-3">
-            <FileText size={24} /> MedScribe: Documentação AI-Nativa
+            <FileText size={24} /> App MedScribe: Documentação AI
+            <Badge variant="secondary" className="ml-2">App MedScribe</Badge>
           </CardTitle>
         </CardHeader>
         <CardContent className="text-center">
@@ -140,7 +141,7 @@ export function MedScribeStage() {
         {isProcessing && (
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
             <Card>
-              <CardHeader><CardTitle>Gerando Documentação...</CardTitle></CardHeader>
+              <CardHeader><CardTitle>Gerando Documento Médico...</CardTitle></CardHeader>
               <CardContent className="space-y-4">
                 <Skeleton className="h-20 w-full" />
                 <Skeleton className="h-10 w-full" />
@@ -168,13 +169,15 @@ export function MedScribeStage() {
                         onChange={e => handleSoapChange(key as keyof SoapNote, e.target.value)}
                         rows={key === 'S' ? 4 : 3}
                         readOnly={isReadOnly}
+                        disabled={isReadOnly}
                       />
                     </div>
                   ))}
+                  {isReadOnly && <p className="text-xs text-muted-foreground">Visualização de Documento - Edição restrita ao profissional.</p>}
                 </CardContent>
               </Card>
               <Card>
-                <CardHeader><CardTitle className="flex items-center gap-2"><Sparkle /> Insights da IA</CardTitle></CardHeader>
+                <CardHeader><CardTitle className="flex items-center gap-2"><Sparkle /> Insights da IA do App</CardTitle></CardHeader>
                 <CardContent>
                   <ul className="list-disc list-inside space-y-2 text-muted-foreground">
                     {transcriptionResult.insights.map((insight, i) => (

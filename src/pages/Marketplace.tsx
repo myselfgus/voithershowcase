@@ -57,8 +57,8 @@ export function Marketplace() {
       >
         <div className="py-8 md:py-10 lg:py-12">
           <SectionHeader
-            title="Marketplace de Stages"
-            subtitle="Expanda as capacidades do HealthOS com Stages desenvolvidos por parceiros confiáveis."
+            title="Marketplace de Módulos"
+            subtitle="Expanda as capacidades do HealthOS com módulos desenvolvidos por parceiros confiáveis."
           />
           <motion.div
             initial={{ opacity: 0, y: 20 }}
@@ -69,7 +69,7 @@ export function Marketplace() {
             <div className="relative">
               <MagnifyingGlass className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
               <Input
-                placeholder="Buscar por Stages..."
+                placeholder="Buscar por Módulos..."
                 className="pl-10"
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
@@ -108,7 +108,7 @@ export function Marketplace() {
                     <div className="mt-auto">
                       <NeumorphicButton asChild className="w-full">
                         <a href={`mailto:connect@${partner.name.toLowerCase().replace(/\s/g, '')}.com`}>
-                          Conectar
+                          Conectar Módulo
                         </a>
                       </NeumorphicButton>
                     </div>

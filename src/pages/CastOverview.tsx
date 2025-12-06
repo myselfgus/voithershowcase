@@ -6,6 +6,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Activity, Users, Layers3, AlertCircle } from 'lucide-react';
 import { useIsMobile } from '@/hooks/use-mobile';
+import { useCurrentRole } from '@/stores/useRoleStore';
 interface CastStatus {
   activeFlows: number;
   actorsManaged: number;
@@ -16,6 +17,7 @@ export function CastOverview() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const isMobile = useIsMobile();
+  const role = useCurrentRole();
   useEffect(() => {
     const fetchStatus = async () => {
       try {
@@ -25,7 +27,15 @@ export function CastOverview() {
         const response = await fetch('/api/status');
         if (!response.ok) throw new Error('Failed to fetch status');
         const result = await response.json();
-        setStatus(result.data);
+        if (role === 'patient') {
+          setStatus({
+            activeFlows: 1,
+            actorsManaged: 3,
+            stagesActive: 2,
+          });
+        } else {
+          setStatus(result.data);
+        }
       } catch (e) {
         const err = e as Error;
         setError(err.message || 'Failed to fetch cast status.');
@@ -35,21 +45,19 @@ export function CastOverview() {
       }
     };
     fetchStatus();
-  }, []);
+  }, [role]);
   const barData = status ? [
-    { name: 'Flows', value: status.activeFlows },
-    { name: 'Actors', value: status.actorsManaged },
-    { name: 'Stages', value: status.stagesActive },
+    { name: 'Workflows', value: status.activeFlows },
+    { name: 'Perfis', value: status.actorsManaged },
+    { name: 'Apps', value: status.stagesActive },
   ] : [];
   if (error) {
     return (
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 md:py-10 lg:py-12">
-        <Alert variant="destructive">
-          <AlertCircle className="h-4 w-4" />
-          <AlertTitle>Error</AlertTitle>
-          <AlertDescription>{error}</AlertDescription>
-        </Alert>
-      </div>
+      <Alert variant="destructive">
+        <AlertCircle className="h-4 w-4" />
+        <AlertTitle>Error</AlertTitle>
+        <AlertDescription>{error}</AlertDescription>
+      </Alert>
     );
   }
   return (
@@ -59,7 +67,7 @@ export function CastOverview() {
         animate={{ opacity: 1, y: 0 }}
         className="text-3xl font-bold font-display"
       >
-        Visão Geral do Cast
+        HealthOS Core Overview
       </motion.h1>
       <div className="grid gap-6 md:grid-cols-3">
         {loading ? (
@@ -73,7 +81,7 @@ export function CastOverview() {
             <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }}>
               <Card>
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium">Fluxos Ativos</CardTitle>
+                  <CardTitle className="text-sm font-medium">Workflows Ativos</CardTitle>
                   <Activity className="h-4 w-4 text-muted-foreground" />
                 </CardHeader>
                 <CardContent>
@@ -84,7 +92,7 @@ export function CastOverview() {
             <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: 0.1 }}>
               <Card>
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium">Atores Gerenciados</CardTitle>
+                  <CardTitle className="text-sm font-medium">Perfis Gerenciados</CardTitle>
                   <Users className="h-4 w-4 text-muted-foreground" />
                 </CardHeader>
                 <CardContent>
@@ -95,7 +103,7 @@ export function CastOverview() {
             <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: 0.2 }}>
               <Card>
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium">Stages Ativos</CardTitle>
+                  <CardTitle className="text-sm font-medium">Apps Ativos</CardTitle>
                   <Layers3 className="h-4 w-4 text-muted-foreground" />
                 </CardHeader>
                 <CardContent>

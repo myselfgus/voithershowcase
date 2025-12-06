@@ -1,18 +1,19 @@
 import React, { useMemo } from 'react';
 import { motion } from 'framer-motion';
-import { PenNib, ArrowsClockwise, Calendar, Monitor, User, Stethoscope, Hospital } from '@phosphor-icons/react';
+import { PenNib, ArrowsClockwise, Calendar, Monitor, User, Stethoscope, Hospital, Wrench } from '@phosphor-icons/react';
 import { useCurrentRole } from '@/stores/useRoleStore';
 import { Badge } from '@/components/ui/badge';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { useNavigate, useLocation } from 'react-router-dom';
 const allDockItems = [
-  { id: 'medscribe', name: 'MedScribe', icon: PenNib, path: '/dashboard/stages/medscribe', roles: ['professional', 'service'] },
-  { id: 'regulacao', name: 'Regulação', icon: ArrowsClockwise, path: '/dashboard/stages/regulacao', roles: ['professional', 'service'] },
-  { id: 'agenda', name: 'Agenda', icon: Calendar, path: '/dashboard/stages/agenda', roles: ['patient', 'professional', 'service'] },
-  { id: 'telemedicina', name: 'Telemedicina', icon: Monitor, path: '/dashboard/stages/telemedicina', roles: ['patient', 'professional'] },
-  { id: 'patient-vault', name: 'Cofre do Paciente', icon: User, path: '/dashboard/actors/patient', roles: ['patient'] },
-  { id: 'entity-profiles', name: 'Profissionais', icon: Stethoscope, path: '/dashboard/actors/entity', roles: ['service'] },
-  { id: 'service-dashboard', name: 'Unidades', icon: Hospital, path: '/dashboard/actors/service', roles: ['service'] },
+  { id: 'medscribe-app', name: 'MedScribe App', icon: PenNib, path: '/dashboard/apps/medscribe', roles: ['professional', 'service'] },
+  { id: 'regulation-center', name: 'Regulation Center', icon: ArrowsClockwise, path: '/dashboard/apps/regulacao', roles: ['professional', 'service'] },
+  { id: 'agenda', name: 'Agenda', icon: Calendar, path: '/dashboard/apps/agenda', roles: ['patient', 'professional', 'service'] },
+  { id: 'telemedicina', name: 'Telemedicina', icon: Monitor, path: '/dashboard/apps/telemedicina', roles: ['patient', 'professional'] },
+  { id: 'patient-profile', name: 'Patient Profile', icon: User, path: '/dashboard/users/patient', roles: ['patient'] },
+  { id: 'professional-user', name: 'Professional User', icon: Stethoscope, path: '/dashboard/users/professional', roles: ['service'] },
+  { id: 'service-unit', name: 'Service Unit', icon: Hospital, path: '/dashboard/users/service', roles: ['service'] },
+  { id: 'health-tools', name: 'Health Tools', icon: Wrench, path: '/dashboard/tools', roles: ['professional', 'service'] },
 ];
 export function Dock() {
   const role = useCurrentRole();
@@ -43,7 +44,7 @@ export function Dock() {
                   >
                     <item.icon className="w-8 h-8 text-healthos-ink dark:text-healthos-porcelain" weight="light" />
                     {isActive && <div className="absolute bottom-0.5 h-1 w-1 rounded-full bg-healthos-ink dark:bg-healthos-porcelain" />}
-                    {item.id === 'medscribe' && role === 'professional' && <Badge variant="destructive" className="absolute -top-1 -right-1 h-4 w-4 p-0 flex items-center justify-center text-xs">1</Badge>}
+                    {item.id === 'medscribe-app' && role === 'professional' && <Badge variant="destructive" className="absolute -top-1 -right-1 h-4 w-4 p-0 flex items-center justify-center text-xs">1</Badge>}
                   </motion.button>
                 </TooltipTrigger>
                 <TooltipContent>

@@ -49,10 +49,10 @@ export const ecosystemModules = [
 ];
 export const stageManifests = {
   medscribe: {
-    name: 'MedScribe',
+    name: 'MedScribe Module',
     manifest: `stage:
-  id: "medscribe"
-  name: "MedScribe"
+  id: "medscribe-module"
+  name: "MedScribe Module"
 tools:
   - id: "ambient-listener"
     category: "capability"
@@ -63,68 +63,63 @@ tools:
     mcpTools:
       - name: "generate_soap_note"
 personas:
-  - id: "transcriber-persona"
+  - id: "transcriber-assistant"
     agent:
       model: "claude-sonnet-4-20250514"
-      systemPrompt: "Você é um assistente de transcrição médica. Ouça a consulta e prepare para documentação."
+      systemPrompt: "Você é um assistente de documentação médica no módulo MedScribe."
     tools: ["ambient-listener"]
-  - id: "documenter-persona"
+  - id: "documenter-assistant"
     agent:
       model: "claude-opus-4-20250514"
-      systemPrompt: "Você é um especialista em documentação clínica. Gere uma nota SOAP precisa a partir da transcrição."
+      systemPrompt: "Você é um especialista em documentação clínica. Gere uma nota SOAP precisa."
     tools: ["documenter"]
     guardrails:
       - type: "require_validation"
 scripts:
-  - id: "consultation-flow"
+  - id: "consultation-workflow"
     steps:
-      - trigger: "consultation_start"
-        activate: "transcriber-persona"
-      - trigger: "consultation_end"
-        activate: "documenter-persona"
+      - trigger: "consulta_inicio"
+        activate: "transcriber-assistant"
+      - trigger: "consulta_fim"
+        activate: "documenter-assistant"
         actions:
           - generate: "soap_note"`
   },
   regulation: {
-    name: 'Regulação',
+    name: 'Regulation Center',
     manifest: `stage:
-  id: "regulation"
-  name: "Central de Regulação"
+  id: "regulation-center"
+  name: "Regulation Center"
 tools:
   - id: "patient-matcher"
     category: "capability"
     mcpTools:
       - name: "find_best_service"
-        inputSchema:
-          type: "object"
-          properties:
-            patientId: { type: "string" }
-            requiredSpecialty: { type: "string" }
 personas:
-  - id: "regulator-agent"
+  - id: "regulator-assistant"
     agent:
       model: "claude-sonnet-4-20250514"
-      systemPrompt: "Você é um agente de regulação. Encontre a melhor unidade para o paciente com base na necessidade e disponibilidade."
+      systemPrompt: "Você é um assistente de regulação. Encontre a melhor unidade para o paciente."
     tools: ["patient-matcher"]
     guardrails:
       - type: "require_validation"
 scripts:
-  - id: "regulation-request"
+  - id: "regulation-workflow"
     steps:
-      - trigger: "new_patient_request"
-        activate: "regulator-agent"`
+      - trigger: "novo_pedido_regulacao"
+        activate: "regulator-assistant"`
   }
 };
 export const sampleScripts = [
   {
-    id: "consultation-flow",
+    id: "consultation-workflow",
     steps: [
       {
-        trigger: "consultation_start",
+        trigger: "consulta_inicio",
         activate: "ambient-listener",
       },
       {
-        trigger: "consultation_end",
+        trigger: "consulta_fim",
         activate: "documenter",
         actions: [
           { generate: "soap_note" },
@@ -134,14 +129,14 @@ export const sampleScripts = [
     ],
   },
   {
-    id: "regulation-flow",
+    id: "regulation-workflow",
     steps: [
       {
-        trigger: "new_patient_request",
+        trigger: "novo_pedido_regulacao",
         activate: "patient-matcher",
       },
       {
-        trigger: "service_found",
+        trigger: "servico_encontrado",
         activate: "notifier",
         actions: [
           { generate: "notify_patient" },
@@ -154,7 +149,7 @@ export const sampleScripts = [
 export const marketplacePartners = [
   {
     name: "Clínica Inova",
-    description: "Stage de gestão de fluxo de pacientes para clínicas de especialidades, otimizando a jornada do paciente desde a chegada até a alta.",
+    description: "Módulo de gestão de fluxo de pacientes para clínicas de especialidades, otimizando a jornada do paciente desde a chegada até a alta.",
     logo: "https://images.unsplash.com/photo-1576091160550-2173dba999ef?q=80&w=200&auto=format&fit=crop",
   },
   {

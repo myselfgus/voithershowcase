@@ -50,8 +50,8 @@ export function StageViewer() {
       >
         <div className="py-8 md:py-10 lg:py-12">
           <SectionHeader
-            title="Visualizador de Manifestos"
-            subtitle="Inspecione as configura��ões declarativas de cada Stage da plataforma HealthOS."
+            title="Visualizador de Módulos"
+            subtitle="Inspecione as configurações declarativas de cada módulo da plataforma HealthOS."
           />
           <motion.div
             initial={{ opacity: 0, y: 20 }}
@@ -64,7 +64,7 @@ export function StageViewer() {
                 <div className="flex flex-col sm:flex-row gap-4 justify-between items-center mb-6">
                   <Select value={selectedStage} onValueChange={(value) => setSelectedStage(value as keyof typeof stageManifests)}>
                     <SelectTrigger className="w-full sm:w-[200px]">
-                      <SelectValue placeholder="Selecione um Stage" />
+                      <SelectValue placeholder="Selecione um Módulo" />
                     </SelectTrigger>
                     <SelectContent>
                       <motion.div
@@ -80,7 +80,7 @@ export function StageViewer() {
                       </motion.div>
                     </SelectContent>
                   </Select>
-                  <Button disabled>Editar Manifesto</Button>
+                  <Button disabled>Editar Configuração do Módulo</Button>
                 </div>
                 <ScrollArea className="h-96 bg-healthos-ice/30 dark:bg-healthos-ice/5 rounded-lg [&>div>div[data-radix-scroll-area-viewport]>style]:!bg-transparent [&>div>div>div[data-radix-scroll-area-thumb]]:!bg-healthos-ice">
                   <div className="p-4">
